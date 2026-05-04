@@ -1,0 +1,2791 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Product Studio · 분석 + 빌더 통합</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #F5F4F1;
+  --bg2: #ECEAE5;
+  --bg3: #E2DFD8;
+  --surface: #FFFFFF;
+  --border: #D8D4CC;
+  --border2: #C4BFB4;
+  --text-primary: #1A1916;
+  --text-secondary: #5C5850;
+  --text-muted: #9C9688;
+  --gold: #C9A96E;
+  --gold-light: #F5F0E8;
+  --blue: #2B4FFF;
+  --blue-light: #EBF0FF;
+  --green: #2D6A4F;
+  --green-light: #E8F4EE;
+  --red: #C0392B;
+  --red-light: #FAEAE8;
+  --purple: #7B4F9E;
+  --purple-light: #F3EEFF;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  background: var(--bg);
+  color: var(--text-primary);
+  font-family: 'Noto Sans KR', sans-serif;
+  font-size: 13px;
+  line-height: 1.6;
+  min-height: 100vh;
+}
+
+/* HEADER */
+.header {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 0 24px;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  position: sticky;
+  top: 0;
+  z-index: 200;
+}
+.logo {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+}
+.logo span { color: var(--gold); }
+.hdiv { width:1px; height:16px; background:var(--border); }
+.header-sub { font-size:11px; color:var(--text-muted); }
+
+/* TABS */
+.tabs {
+  display: flex;
+  gap: 2px;
+  margin-left: auto;
+  background: var(--bg2);
+  border-radius: 8px;
+  padding: 3px;
+}
+.tab {
+  padding: 5px 16px;
+  border-radius: 6px;
+  font-size: 11px;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-family: 'Noto Sans KR', sans-serif;
+  font-weight: 500;
+  transition: all 0.15s;
+}
+.tab:hover { color: var(--text-primary); }
+.tab.active {
+  background: var(--surface);
+  color: var(--text-primary);
+  font-weight: 700;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+}
+
+/* LAYOUT */
+.body {
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  min-height: calc(100vh - 52px);
+}
+.left {
+  padding: 24px;
+  overflow-y: auto;
+  border-right: 1px solid var(--border);
+}
+.right {
+  padding: 20px;
+  background: var(--surface);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  position: sticky;
+  top: 52px;
+  height: calc(100vh - 52px);
+}
+
+.tab-content { display:none; }
+.tab-content.active { display:block; }
+
+/* SECTION */
+.sec { margin-bottom: 18px; }
+.sec-hd {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.sec-num {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  font-weight: 700;
+  background: var(--text-primary);
+  color: white;
+  padding: 2px 7px;
+  border-radius: 4px;
+  min-width:22px;
+  text-align:center;
+}
+.sec-title { font-size: 13px; font-weight: 700; }
+.sec-note { font-size: 10px; color: var(--text-muted); margin-left: auto; }
+
+/* CHIPS */
+.chips { display:flex; flex-wrap:wrap; gap:5px; }
+.chip {
+  padding: 5px 11px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  font-size: 11px;
+  cursor: pointer;
+  color: var(--text-secondary);
+  transition: all 0.12s;
+  user-select: none;
+}
+.chip:hover { border-color: var(--border2); }
+.chip.active { background: var(--text-primary); color: white; border-color: var(--text-primary); }
+
+/* UPLOAD ZONE */
+.upload-zone {
+  border: 2px dashed var(--border2);
+  background: var(--surface);
+  border-radius: 14px;
+  padding: 40px 24px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.18s;
+  position: relative;
+  overflow: hidden;
+  min-height: 180px;
+}
+.upload-zone:hover { border-color: var(--gold); background: var(--gold-light); }
+.upload-zone.dragover { border-color: var(--gold); background: var(--gold-light); transform: scale(1.01); }
+.upload-zone.has-image { padding: 0; border-style: solid; }
+.upload-icon { font-size: 36px; margin-bottom: 10px; }
+.upload-title { font-size: 13px; font-weight: 700; margin-bottom: 4px; }
+.upload-desc { font-size: 11px; color: var(--text-muted); }
+.upload-input { display: none; }
+.preview-img { width: 100%; height: auto; max-height: 280px; object-fit: contain; display: block; }
+.preview-overlay {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  background: linear-gradient(transparent, rgba(0,0,0,0.7));
+  padding: 12px;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11px;
+}
+.preview-name { font-family: 'JetBrains Mono', monospace; font-size: 10px; }
+.btn-clear {
+  background: rgba(255,255,255,0.9);
+  color: var(--text-primary);
+  border: none;
+  padding: 4px 10px;
+  border-radius: 5px;
+  font-size: 10px;
+  cursor: pointer;
+}
+.btn-clear:hover { background: white; }
+
+/* ANALYZE BUTTON */
+.btn-analyze {
+  width: 100%;
+  padding: 14px;
+  background: var(--text-primary);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-size: 13px;
+  font-family: 'Noto Sans KR', sans-serif;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.btn-analyze:hover:not(:disabled) { background: var(--blue); transform: translateY(-1px); }
+.btn-analyze:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+.btn-analyze.loading { background: var(--gold); }
+
+/* LOADING BAR */
+.loading-bar {
+  height: 3px;
+  background: var(--border);
+  border-radius: 3px;
+  overflow: hidden;
+  display: none;
+  margin-bottom: 8px;
+}
+.loading-bar.active { display: block; }
+.loading-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--gold), var(--blue), var(--gold));
+  background-size: 200% 100%;
+  animation: loading 1.5s ease infinite;
+  border-radius: 3px;
+}
+@keyframes loading {
+  0% { background-position: 200% 0; width: 30%; }
+  50% { width: 70%; }
+  100% { background-position: -200% 0; width: 30%; }
+}
+
+/* RESULT BLOCKS (분석 결과) */
+.result-block {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px;
+  margin-bottom: 8px;
+  transition: border-color 0.15s;
+}
+.result-block.filled { border-color: var(--gold); }
+.rb-hd { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.rb-badge {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: var(--gold-light);
+  color: var(--gold);
+}
+.rb-name { font-size: 12px; font-weight: 700; }
+.rb-val {
+  font-size: 11px;
+  color: var(--text-secondary);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 7px 10px;
+  margin-bottom: 6px;
+  cursor: pointer;
+  transition: all 0.12s;
+}
+.rb-val:hover { border-color: var(--border2); }
+.rb-val.editable:focus {
+  outline: none;
+  border-color: var(--gold);
+  background: var(--surface);
+}
+.rb-reasoning {
+  font-size: 10px;
+  color: var(--text-muted);
+  font-style: italic;
+  padding: 4px 8px;
+  background: var(--bg2);
+  border-radius: 4px;
+}
+
+/* ── BRIDGE BUTTON (분석 → 빌더) ── */
+.bridge-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+.btn-bridge {
+  flex: 1;
+  padding: 12px;
+  background: linear-gradient(135deg, var(--gold), #B89456);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: 'Noto Sans KR', sans-serif;
+  transition: all 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+.btn-bridge:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(201,169,110,0.3); }
+.btn-bridge:disabled { opacity: 0.4; cursor: not-allowed; transform: none; box-shadow: none; }
+
+/* ── BUILDER LAYER BLOCKS ── */
+.tmpl-banner {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.tmpl-banner.empty { background: var(--bg2); border-style: dashed; }
+.tmpl-banner.from-image { border-color: var(--gold); background: var(--gold-light); }
+.tb-icon {
+  width: 38px; height: 38px;
+  border-radius: 8px;
+  background: var(--text-primary);
+  color: white;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
+  font-weight: 700;
+}
+.tb-icon.empty { background: var(--bg3); color: var(--text-muted); }
+.tb-icon.from-image { background: var(--gold); }
+.tb-icon.from-image-thumb { padding:0; overflow:hidden; }
+.tb-icon img { width:100%; height:100%; object-fit:cover; }
+.tb-info { flex: 1; min-width: 0; }
+.tb-name { font-size: 13px; font-weight: 700; margin-bottom: 2px; }
+.tb-def { font-size: 11px; color: var(--text-secondary); line-height: 1.4; }
+.tb-change {
+  padding: 6px 10px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 10px;
+  cursor: pointer;
+  font-family: 'Noto Sans KR', sans-serif;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+.tb-change:hover { background: var(--bg2); }
+
+/* LEGEND */
+.legend {
+  display: flex;
+  gap: 12px;
+  padding: 8px 12px;
+  background: var(--bg2);
+  border-radius: 8px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+.lg-item { display: flex; align-items: center; gap: 5px; font-size: 10px; color: var(--text-muted); }
+.lg-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+/* LAYER BLOCK (빌더) */
+.layer-blk {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin-bottom: 8px;
+  transition: border-color 0.15s;
+}
+.layer-blk.has-value { border-color: var(--gold); }
+.layer-blk.modified { border-color: var(--green); }
+.lb-hd { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.lb-badge {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: var(--bg2);
+  color: var(--text-muted);
+}
+.lb-badge.from-tmpl { background: var(--gold-light); color: var(--gold); }
+.lb-badge.modified { background: var(--green-light); color: var(--green); }
+.lb-title { font-size: 12px; font-weight: 700; }
+.lb-cur {
+  margin-left: auto;
+  font-size: 10px;
+  color: var(--text-muted);
+  font-family: 'JetBrains Mono', monospace;
+  padding: 2px 7px;
+  border-radius: 4px;
+  background: var(--bg);
+}
+.lb-cur.set { background: var(--gold-light); color: var(--gold); }
+.lb-cur.modified { background: var(--green-light); color: var(--green); }
+.lb-opts { display: flex; flex-wrap: wrap; gap: 5px; }
+.sg-label {
+  width: 100%;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-top: 6px;
+  margin-bottom: 2px;
+}
+.sg-label:first-child { margin-top: 0; }
+.lopt {
+  padding: 5px 10px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.12s;
+  color: var(--text-secondary);
+  user-select: none;
+}
+.lopt:hover { border-color: var(--border2); background: var(--surface); }
+.lopt.from-tmpl { background: var(--gold-light); border-color: var(--gold); color: var(--gold); }
+.lopt.active { background: var(--text-primary); color: white; border-color: var(--text-primary); }
+.lopt.active.from-tmpl { background: var(--gold); border-color: var(--gold); }
+
+/* PRODUCT INFO BLOCK */
+.product-info-block {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin-bottom: 8px;
+}
+.pib-title {
+  font-size: 11px;
+  font-weight: 700;
+  margin-bottom: 8px;
+  color: var(--text-primary);
+}
+.pib-row { margin-bottom: 8px; }
+.pib-row:last-child { margin-bottom: 0; }
+.pib-label {
+  font-size: 10px;
+  color: var(--text-muted);
+  margin-bottom: 3px;
+  font-weight: 500;
+}
+.pib-input {
+  width: 100%;
+  padding: 7px 10px;
+  font-size: 11px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-family: 'Noto Sans KR', sans-serif;
+  color: var(--text-primary);
+  resize: vertical;
+  line-height: 1.5;
+}
+.pib-input:focus { outline: none; border-color: var(--gold); background: var(--surface); }
+.pib-hint { font-size: 10px; color: var(--text-muted); margin-top: 4px; }
+
+/* QUICK KEYWORDS */
+.extra-kw-wrap { display: flex; flex-wrap: wrap; gap: 4px; }
+.extra-kw {
+  padding: 4px 9px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  font-size: 10px;
+  cursor: pointer;
+  transition: all 0.12s;
+  color: var(--text-secondary);
+  user-select: none;
+}
+.extra-kw:hover { border-color: var(--border2); }
+.extra-kw.added { background: var(--blue-light); color: var(--blue); border-color: var(--blue); }
+
+/* TEMPLATE GRID (빌더 템플릿) */
+.tmpl-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+.tc {
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  padding: 11px 13px;
+  cursor: pointer;
+  transition: all 0.12s;
+  position: relative;
+  overflow: hidden;
+}
+.tc:hover { border-color: var(--border2); }
+.tc.selected { border-color: var(--gold); background: var(--gold-light); }
+.tc-bar { position: absolute; top: 0; left: 0; right: 0; height: 2px; }
+.tc-num {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+.tc-name { font-size: 12px; font-weight: 700; margin-bottom: 3px; }
+.tc-def { font-size: 10px; color: var(--text-secondary); line-height: 1.4; margin-bottom: 6px; }
+.tc-mini { display: flex; flex-wrap: wrap; gap: 3px; }
+.tc-tag {
+  font-size: 9px;
+  padding: 1px 5px;
+  border-radius: 3px;
+  background: var(--bg2);
+  color: var(--text-muted);
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* GROUP COLORS */
+.gc-basic { background: #1A1916; }
+.gc-light { background: #C9A96E; }
+.gc-texture { background: #2B4FFF; }
+.gc-lifestyle { background: #2D6A4F; }
+.gc-material { background: #7B4F9E; }
+.gc-effect { background: #C0392B; }
+.gc-season { background: #E67E22; }
+.gc-technique { background: #16A085; }
+.gc-space { background: #2980B9; }
+.gc-color { background: #8E44AD; }
+.gc-motion { background: #D35400; }
+.gc-category { background: #27AE60; }
+.gc-culture { background: #C0392B; }
+
+/* SUB-TABS for Builder (템플릿 / 커스텀) */
+.subtabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+}
+.subtab {
+  padding: 8px 16px;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-family: 'Noto Sans KR', sans-serif;
+  transition: all 0.15s;
+  margin-bottom: -1px;
+}
+.subtab:hover { color: var(--text-primary); }
+.subtab.active { color: var(--text-primary); border-bottom-color: var(--gold); }
+.subtab-content { display: none; }
+.subtab-content.active { display: block; }
+
+/* SAVED LIST */
+.saved-list { display: flex; flex-direction: column; gap: 8px; }
+.saved-item {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  transition: all 0.12s;
+}
+.saved-item:hover { border-color: var(--border2); }
+.saved-thumb {
+  width: 56px; height: 56px;
+  border-radius: 8px;
+  object-fit: cover;
+  background: var(--bg2);
+  flex-shrink: 0;
+}
+.saved-thumb-placeholder {
+  width: 56px; height: 56px;
+  border-radius: 8px;
+  background: var(--bg2);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px;
+  flex-shrink: 0;
+}
+.saved-info { flex: 1; min-width: 0; }
+.saved-source-row { display:flex; align-items:center; gap:6px; margin-bottom: 3px; }
+.saved-source {
+  font-size: 9px; padding: 1px 6px;
+  border-radius: 3px;
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 700;
+}
+.saved-source.image { background: var(--gold-light); color: var(--gold); }
+.saved-source.builder { background: var(--blue-light); color: var(--blue); }
+.saved-name { font-size: 13px; font-weight: 700; }
+.saved-date { font-size: 10px; color: var(--text-muted); font-family: 'JetBrains Mono', monospace; margin-bottom: 4px; }
+.saved-tags { display: flex; flex-wrap: wrap; gap: 3px; }
+.saved-tag {
+  font-size: 9px; padding: 1px 5px;
+  border-radius: 3px;
+  background: var(--bg2);
+  color: var(--text-muted);
+  font-family: 'JetBrains Mono', monospace;
+}
+.saved-btns { display: flex; flex-direction: column; gap: 4px; }
+.btn-load {
+  padding: 5px 10px;
+  background: var(--text-primary);
+  color: white;
+  border: none;
+  border-radius: 5px;
+  font-size: 10px;
+  cursor: pointer;
+  font-family: 'Noto Sans KR', sans-serif;
+  transition: all 0.12s;
+  white-space: nowrap;
+}
+.btn-load:hover { background: var(--blue); }
+.btn-load.gold { background: var(--gold); }
+.btn-load.gold:hover { background: #B89456; }
+.btn-del {
+  padding: 5px 10px;
+  background: var(--surface);
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  font-size: 10px;
+  cursor: pointer;
+  font-family: 'Noto Sans KR', sans-serif;
+}
+.btn-del:hover { background: var(--red-light); color: var(--red); border-color: var(--red); }
+
+/* EMPTY STATE */
+.empty-state {
+  text-align: center; padding: 40px 20px;
+  color: var(--text-muted);
+}
+.empty-icon { font-size: 36px; margin-bottom: 10px; }
+.empty-text { font-size: 12px; line-height: 1.6; }
+
+/* RIGHT PANEL */
+.rp-label {
+  font-size: 9px; font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+}
+.api-status-bar {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.status-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.status-dot.ok { background: var(--green); }
+.status-dot.empty { background: var(--border2); }
+.status-text { font-size: 11px; color: var(--text-secondary); }
+.status-model { font-size: 10px; color: var(--text-muted); margin-left: auto; font-family: 'JetBrains Mono', monospace; }
+
+/* LAYER MINI (right panel summary) */
+.layer-mini {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px;
+  flex: 0 0 auto;
+}
+.lm-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 0;
+  font-size: 10px;
+}
+.lm-row + .lm-row { border-top: 1px dashed var(--border); }
+.lm-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+.lm-dot.empty { background: var(--border); }
+.lm-dot.set { background: var(--gold); }
+.lm-dot.modified { background: var(--green); }
+.lm-k {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  font-weight: 700;
+  color: var(--text-muted);
+  width: 18px;
+}
+.lm-v { color: var(--text-secondary); flex: 1; }
+.lm-v.set { color: var(--gold); font-weight: 600; }
+.lm-v.modified { color: var(--green); font-weight: 600; }
+.lm-v.ai { color: var(--gold); font-weight: 600; }
+
+/* PROMPT BOX */
+.prompt-box {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px;
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.prompt-section-label {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+.prompt-ko {
+  font-size: 11px;
+  color: var(--text-secondary);
+  line-height: 1.7;
+  padding-bottom: 8px;
+  border-bottom: 1px dashed var(--border);
+}
+.prompt-en {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: var(--text-secondary);
+  line-height: 1.7;
+}
+.prompt-extra {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: var(--blue);
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px dashed #C5D0FF;
+  line-height: 1.7;
+}
+
+/* BUTTONS */
+.btn-row { display: flex; gap: 6px; flex-shrink: 0; }
+.btn-main {
+  flex: 1;
+  padding: 10px;
+  background: var(--text-primary);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 12px;
+  font-family: 'Noto Sans KR', sans-serif;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.btn-main:hover { background: var(--blue); }
+.btn-main.copied { background: var(--green); }
+.btn-sm {
+  padding: 10px 12px;
+  background: var(--surface);
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 11px;
+  font-family: 'Noto Sans KR', sans-serif;
+  cursor: pointer;
+}
+.btn-sm:hover { background: var(--bg2); }
+.btn-gold {
+  padding: 10px 12px;
+  background: var(--gold-light);
+  color: var(--gold);
+  border: 1px solid #E8D5B0;
+  border-radius: 8px;
+  font-size: 11px;
+  font-family: 'Noto Sans KR', sans-serif;
+  cursor: pointer;
+  font-weight: 600;
+}
+.btn-gold:hover:not(:disabled) { background: #F0E0BE; }
+.btn-gold:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* MODAL */
+.overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.45);
+  z-index: 500;
+  display: none;
+  align-items: center;
+  justify-content: center;
+}
+.overlay.open { display: flex; }
+.modal {
+  background: var(--surface);
+  border-radius: 14px;
+  padding: 24px;
+  width: 580px;
+  max-width: 90vw;
+  max-height: 82vh;
+  overflow-y: auto;
+  position: relative;
+}
+.modal.sm { width: 420px; }
+.modal-x {
+  position: absolute; top: 16px; right: 16px;
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+.modal-x:hover { background: var(--bg2); }
+.modal-title { font-size: 18px; font-weight: 700; margin-bottom: 16px; }
+.modal-label {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-bottom: 5px;
+  margin-top: 12px;
+  font-weight: 500;
+}
+.modal-input {
+  width: 100%;
+  padding: 10px 12px;
+  font-size: 13px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-family: 'Noto Sans KR', sans-serif;
+}
+.modal-input:focus { outline: none; border-color: var(--gold); background: var(--surface); }
+.modal-btn {
+  width: 100%;
+  margin-top: 16px;
+  padding: 12px;
+  background: var(--text-primary);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: 'Noto Sans KR', sans-serif;
+}
+.modal-btn:hover { background: var(--blue); }
+
+.modal-filter { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 14px; }
+.modal-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+.mc {
+  background: var(--bg);
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  cursor: pointer;
+  transition: all 0.12s;
+  position: relative;
+  overflow: hidden;
+}
+.mc:hover { border-color: var(--border2); background: var(--surface); }
+.mc.selected { border-color: var(--gold); background: var(--gold-light); }
+.mc-bar { position: absolute; top: 0; left: 0; right: 0; height: 2px; border-radius: 8px 8px 0 0; }
+.mc-num { font-family: 'JetBrains Mono', monospace; font-size: 9px; color: var(--text-muted); }
+.mc-name { font-size: 11px; font-weight: 700; margin-bottom: 2px; }
+.mc-def { font-size: 10px; color: var(--text-secondary); line-height: 1.4; }
+
+/* API SETTINGS */
+.api-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px;
+  margin-bottom: 10px;
+  cursor: pointer;
+  transition: all 0.12s;
+}
+.api-card:hover { border-color: var(--border2); }
+.api-card.selected { border-color: var(--gold); background: var(--gold-light); }
+.api-card-hd {
+  display: flex; align-items: center; gap: 10px;
+  margin-bottom: 10px;
+}
+.api-icon {
+  width: 36px; height: 36px;
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+.api-name { font-size: 13px; font-weight: 700; margin-bottom: 2px; }
+.api-desc { font-size: 10px; color: var(--text-muted); }
+.api-badge {
+  margin-left: auto;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  font-weight: 700;
+  padding: 3px 7px;
+  border-radius: 4px;
+}
+.badge-best { background: var(--gold-light); color: var(--gold); }
+.badge-free { background: var(--green-light); color: var(--green); }
+.api-input-row { display: flex; gap: 6px; margin-bottom: 6px; }
+.api-input {
+  flex: 1;
+  padding: 7px 10px;
+  font-size: 11px;
+  font-family: 'JetBrains Mono', monospace;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+.api-input:focus { outline: none; border-color: var(--gold); background: var(--surface); }
+.btn-save-key {
+  padding: 7px 12px;
+  background: var(--text-primary);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 11px;
+  cursor: pointer;
+  font-family: 'Noto Sans KR', sans-serif;
+}
+.btn-save-key:hover { background: var(--blue); }
+.btn-save-key.saved { background: var(--green); }
+.key-status {
+  font-size: 10px;
+  color: var(--text-muted);
+  font-family: 'JetBrains Mono', monospace;
+}
+.key-status.ok { color: var(--green); }
+.key-status.empty { color: var(--text-muted); }
+
+/* ALERT */
+.alert {
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 11px;
+  margin-bottom: 10px;
+  display: none;
+}
+.alert.show { display: block; }
+.alert.error { background: var(--red-light); color: var(--red); border: 1px solid #F5C6C2; }
+.alert.success { background: var(--green-light); color: var(--green); border: 1px solid #B8DFC9; }
+.alert.info { background: var(--blue-light); color: var(--blue); border: 1px solid #C5D0FF; }
+
+/* GUIDE TOGGLE */
+.guide-toggle {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 10px; color: var(--blue);
+  cursor: pointer; margin-top: 8px;
+  padding: 5px 0;
+  border-top: 1px dashed var(--border);
+  user-select: none;
+}
+.guide-toggle:hover { color: var(--text-primary); }
+.guide-arrow { transition: transform 0.2s; font-size: 9px; }
+.guide-arrow.open { transform: rotate(90deg); }
+.guide-box {
+  display: none;
+  background: var(--bg2);
+  border-radius: 8px;
+  padding: 12px 14px;
+  margin-top: 6px;
+  font-size: 11px;
+  color: var(--text-secondary);
+  line-height: 1.8;
+}
+.guide-box.open { display: block; }
+.guide-step {
+  display: flex; gap: 8px;
+  padding: 4px 0;
+  align-items: baseline;
+}
+.guide-step-num {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px; font-weight: 700;
+  color: var(--gold); flex-shrink: 0;
+  width: 16px;
+}
+.guide-link { color: var(--blue); text-decoration: none; font-weight: 600; }
+.guide-link:hover { text-decoration: underline; }
+
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+/* Responsive */
+@media (max-width: 980px) {
+  .body { grid-template-columns: 1fr; }
+  .right { position: static; height: auto; border-top: 1px solid var(--border); }
+}
+</style>
+</head>
+<body>
+
+<!-- ════════════════ HEADER ════════════════ -->
+<header class="header">
+  <span class="logo">PRODUCT<span>.</span>STUDIO</span>
+  <div class="hdiv"></div>
+  <span class="header-sub">분석 + 빌더 통합 워크플로우</span>
+  <div class="tabs">
+    <button class="tab active" data-tab="analyze" onclick="showTab('analyze',this)">🔍 분석</button>
+    <button class="tab" data-tab="builder" onclick="showTab('builder',this)">✦ 빌더</button>
+    <button class="tab" data-tab="saved" onclick="showTab('saved',this)">📁 저장됨</button>
+    <button class="tab" data-tab="settings" onclick="showTab('settings',this)">⚙️ API</button>
+  </div>
+</header>
+
+<div class="body">
+
+<!-- ════════════════ LEFT ════════════════ -->
+<div class="left">
+
+  <div id="alert-box" class="alert"></div>
+
+  <!-- ══════ TAB 1: 분석 ══════ -->
+  <div class="tab-content active" id="tab-analyze">
+
+    <div class="sec">
+      <div class="sec-hd">
+        <div class="sec-num">1</div>
+        <div class="sec-title">제품 이미지 업로드</div>
+        <div class="sec-note">JPG, PNG, WEBP</div>
+      </div>
+      <div class="upload-zone" id="upload-zone"
+           onclick="document.getElementById('file-input').click()"
+           ondragover="onDragOver(event)"
+           ondragleave="onDragLeave(event)"
+           ondrop="onDrop(event)">
+        <div id="upload-placeholder">
+          <div class="upload-icon">📦</div>
+          <div class="upload-title">이미지를 드래그하거나 클릭하세요</div>
+          <div class="upload-desc">제품 사진을 업로드하면 AI가 8개 촬영 레이어를 자동 분석합니다</div>
+        </div>
+        <img id="preview-img" class="preview-img" style="display:none">
+        <div class="preview-overlay" id="preview-overlay" style="display:none">
+          <span class="preview-name" id="preview-name"></span>
+          <button class="btn-clear" onclick="clearImage(event)">✕ 제거</button>
+        </div>
+      </div>
+      <input type="file" id="file-input" class="upload-input" accept="image/*" onchange="onFileSelect(event)">
+    </div>
+
+    <div class="sec">
+      <div class="loading-bar" id="loading-bar"><div class="loading-fill"></div></div>
+      <button class="btn-analyze" id="btn-analyze" onclick="analyzeImage()" disabled>
+        <span id="analyze-icon">✦</span>
+        <span id="analyze-text">이미지를 업로드하면 분석 시작</span>
+      </button>
+    </div>
+
+    <div class="sec" id="result-section" style="display:none">
+      <div class="sec-hd">
+        <div class="sec-num">2</div>
+        <div class="sec-title">분석 결과</div>
+        <div class="sec-note">클릭하면 직접 수정 가능</div>
+      </div>
+      <div id="result-blocks"></div>
+
+      <!-- ══ BRIDGE: 분석 → 빌더 ══ -->
+      <div class="bridge-row">
+        <button class="btn-bridge" id="btn-bridge" onclick="bridgeToBuilder()">
+          ✦ 빌더에서 편집하기
+        </button>
+        <button class="btn-gold" id="btn-save-from-analyze" onclick="openSaveModal('image')">💾 저장</button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ══════ TAB 2: 빌더 ══════ -->
+  <div class="tab-content" id="tab-builder">
+
+    <!-- 서브 탭: 템플릿 / 커스텀 -->
+    <div class="subtabs">
+      <button class="subtab active" id="subtab-template" onclick="showSubtab('template',this)">📋 템플릿 선택</button>
+      <button class="subtab" id="subtab-custom" onclick="showSubtab('custom',this)">✦ 레이어 조정</button>
+    </div>
+
+    <!-- ── 서브탭: 템플릿 ── -->
+    <div class="subtab-content active" id="subtab-content-template">
+      <div class="sec">
+        <div class="sec-hd">
+          <div class="sec-num">1</div>
+          <div class="sec-title">제품 유형</div>
+        </div>
+        <div class="chips" id="pt-chips">
+          <span class="chip active" onclick="setPType('전체',this)">전체</span>
+          <span class="chip" onclick="setPType('스킨케어',this)">스킨케어</span>
+          <span class="chip" onclick="setPType('메이크업',this)">메이크업</span>
+          <span class="chip" onclick="setPType('향수',this)">향수</span>
+          <span class="chip" onclick="setPType('바디/헤어',this)">바디/헤어</span>
+        </div>
+      </div>
+
+      <div class="sec">
+        <div class="sec-hd">
+          <div class="sec-num">2</div>
+          <div class="sec-title">카테고리 필터</div>
+        </div>
+        <div class="chips" id="grp-chips">
+          <span class="chip active" onclick="setGrp('전체',this)">전체 55</span>
+          <span class="chip" onclick="setGrp('클린/기본',this)">클린/기본</span>
+          <span class="chip" onclick="setGrp('빛/조명',this)">빛/조명</span>
+          <span class="chip" onclick="setGrp('텍스처/임팩트',this)">텍스처</span>
+          <span class="chip" onclick="setGrp('라이프스타일',this)">라이프스타일</span>
+          <span class="chip" onclick="setGrp('시즌/날씨',this)">시즌/날씨</span>
+          <span class="chip" onclick="setGrp('특수기법',this)">특수기법</span>
+          <span class="chip" onclick="setGrp('공간/환경',this)">공간/환경</span>
+          <span class="chip" onclick="setGrp('카테고리전용',this)">카테고리전용</span>
+          <span class="chip" onclick="setGrp('문화권',this)">문화권</span>
+        </div>
+      </div>
+
+      <div class="sec">
+        <div class="sec-hd">
+          <div class="sec-num">3</div>
+          <div class="sec-title">템플릿 선택</div>
+          <div class="sec-note">클릭하면 레이어 조정 탭으로</div>
+        </div>
+        <div class="tmpl-grid" id="tmpl-grid"></div>
+      </div>
+    </div>
+
+    <!-- ── 서브탭: 커스텀 ── -->
+    <div class="subtab-content" id="subtab-content-custom">
+
+      <div class="sec">
+        <div class="sec-hd">
+          <div class="sec-num">1</div>
+          <div class="sec-title">기준 (Source)</div>
+          <div class="sec-note">템플릿/이미지/직접조합</div>
+        </div>
+        <div class="tmpl-banner empty" id="tmpl-banner">
+          <div class="tb-icon empty">📦</div>
+          <div class="tb-info">
+            <div class="tb-name" id="tb-name">기준 없음</div>
+            <div class="tb-def" id="tb-def">템플릿 탭에서 선택하거나, 분석 결과를 가져오거나, 아래 레이어를 직접 조합하세요</div>
+          </div>
+          <button class="tb-change" id="tb-change-btn">변경</button>
+        </div>
+      </div>
+
+      <div class="legend">
+        <div class="lg-item"><div class="lg-dot" style="background:var(--gold)"></div>기준값 (템플릿/분석)</div>
+        <div class="lg-item"><div class="lg-dot" style="background:var(--green)"></div>직접 수정됨</div>
+        <div class="lg-item"><div class="lg-dot" style="background:var(--border)"></div>미선택</div>
+      </div>
+
+      <div class="sec">
+        <div class="sec-hd">
+          <div class="sec-num">2</div>
+          <div class="sec-title">레이어 조정</div>
+          <div class="sec-note">8개 레이어 개별 수정</div>
+        </div>
+        <div id="layer-blocks"></div>
+      </div>
+
+      <div class="sec">
+        <div class="sec-hd">
+          <div class="sec-num">3</div>
+          <div class="sec-title">제품 정보 & 추가 설정</div>
+          <div class="sec-note">선택사항 — 프롬프트 자동 포함</div>
+        </div>
+
+        <div class="product-info-block">
+          <div class="pib-title">제품 정보</div>
+          <div class="pib-row">
+            <div class="pib-label">제품명</div>
+            <textarea class="pib-input" id="pi-name" rows="1" placeholder="예) 나노아 SC로션, 히알루론산 세럼" oninput="updatePrompt()"></textarea>
+          </div>
+          <div class="pib-row">
+            <div class="pib-label">제품 특징</div>
+            <textarea class="pib-input" id="pi-feature" rows="2" placeholder="예) 투명한 젤 타입, 골드 메탈릭 용기, 50ml 슬림 병" oninput="updatePrompt()"></textarea>
+          </div>
+          <div class="pib-row">
+            <div class="pib-label">타겟 무드</div>
+            <textarea class="pib-input" id="pi-mood" rows="1" placeholder="예) 20대 여성, 클린뷰티, 프리미엄" oninput="updatePrompt()"></textarea>
+          </div>
+        </div>
+
+        <div class="product-info-block">
+          <div class="pib-title">추가 프롬프트 (영문)</div>
+          <textarea class="pib-input" id="pi-extra" rows="3" placeholder="직접 영문 키워드 추가&#10;예) soft bokeh background, label clearly visible, no text overlay" oninput="updatePrompt()"></textarea>
+          <div class="pib-hint">최종 프롬프트 하단에 추가됩니다</div>
+
+          <div style="margin-top:10px;">
+            <div class="pib-hint" style="margin-bottom:5px;">빠른 추가 키워드 (클릭 토글)</div>
+            <div class="extra-kw-wrap" id="quick-kw">
+              <span class="extra-kw" onclick="addKw(this,'label clearly visible')">라벨 선명</span>
+              <span class="extra-kw" onclick="addKw(this,'no text no watermark')">텍스트 없음</span>
+              <span class="extra-kw" onclick="addKw(this,'high resolution')">고해상도</span>
+              <span class="extra-kw" onclick="addKw(this,'sharp focus')">선명 포커스</span>
+              <span class="extra-kw" onclick="addKw(this,'commercial quality')">상업적 품질</span>
+              <span class="extra-kw" onclick="addKw(this,'studio quality lighting')">스튜디오 품질</span>
+              <span class="extra-kw" onclick="addKw(this,'soft bokeh background')">소프트 보케</span>
+              <span class="extra-kw" onclick="addKw(this,'product photography')">제품 촬영</span>
+              <span class="extra-kw" onclick="addKw(this,'realistic photo')">리얼리스틱</span>
+              <span class="extra-kw" onclick="addKw(this,'editorial style')">에디토리얼</span>
+              <span class="extra-kw" onclick="addKw(this,'luxury aesthetic')">럭셔리</span>
+              <span class="extra-kw" onclick="addKw(this,'minimalist composition')">미니멀 구성</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="bridge-row">
+        <button class="btn-gold" onclick="openSaveModal('builder')">💾 저장</button>
+        <button class="btn-sm" onclick="resetBuilder()">초기화</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════ TAB 3: 저장됨 ══════ -->
+  <div class="tab-content" id="tab-saved">
+    <div class="sec">
+      <div class="sec-hd">
+        <div class="sec-num">📁</div>
+        <div class="sec-title">저장된 라이브러리</div>
+        <div class="sec-note" id="saved-count">0개</div>
+      </div>
+      <div class="chips" id="saved-filter" style="margin-bottom:14px">
+        <span class="chip active" onclick="setSavedFilter('all',this)">전체</span>
+        <span class="chip" onclick="setSavedFilter('image',this)">📷 이미지 분석</span>
+        <span class="chip" onclick="setSavedFilter('builder',this)">🎨 빌더</span>
+      </div>
+      <div id="saved-list"></div>
+    </div>
+  </div>
+
+  <!-- ══════ TAB 4: 설정 ══════ -->
+  <div class="tab-content" id="tab-settings">
+
+    <div class="sec">
+      <div class="sec-hd">
+        <div class="sec-num">⚙️</div>
+        <div class="sec-title">API 선택 및 키 입력</div>
+      </div>
+      <p style="font-size:11px; color:var(--text-muted); margin-bottom:16px; line-height:1.7;">
+        API 키는 브라우저 로컬 저장소에만 저장됩니다. 외부 서버로 전송되지 않습니다.<br>
+        무료로 시작하려면 <strong>Gemini</strong>를 선택하세요.
+      </p>
+
+      <!-- Claude -->
+      <div class="api-card" id="card-claude" onclick="selectApi('claude')">
+        <div class="api-card-hd">
+          <div class="api-icon" style="background:#F0EDE8;">🧠</div>
+          <div>
+            <div class="api-name">Claude (Anthropic)</div>
+            <div class="api-desc">이미지 분석 정확도 최상 · 구조화 분석에 강함</div>
+          </div>
+          <span class="api-badge badge-best">BEST</span>
+        </div>
+        <div class="api-input-row" onclick="event.stopPropagation()">
+          <input class="api-input" id="key-claude" type="password" placeholder="sk-ant-api03-...">
+          <button class="btn-save-key" onclick="saveKey('claude',event)">저장</button>
+        </div>
+        <div class="key-status empty" id="status-claude">키 없음</div>
+        <div style="margin-top:8px; font-size:10px; color:var(--text-muted);">
+          발급: <a href="https://console.anthropic.com" target="_blank" style="color:var(--blue)">console.anthropic.com</a>
+          · 모델: claude-sonnet-4-5
+        </div>
+        <div class="guide-toggle" onclick="toggleGuide('guide-claude')">
+          <span class="guide-arrow" id="arr-guide-claude">▶</span>
+          <span>API 키 발급 방법 보기</span>
+        </div>
+        <div class="guide-box" id="guide-claude">
+          <div class="guide-step"><span class="guide-step-num">1</span><span><a class="guide-link" href="https://console.anthropic.com" target="_blank">console.anthropic.com</a> 접속 후 회원가입</span></div>
+          <div class="guide-step"><span class="guide-step-num">2</span><span>이메일 인증 완료</span></div>
+          <div class="guide-step"><span class="guide-step-num">3</span><span>좌측 메뉴 <strong>API Keys</strong> 클릭</span></div>
+          <div class="guide-step"><span class="guide-step-num">4</span><span><strong>Create Key</strong> 버튼 클릭 → 이름 입력</span></div>
+          <div class="guide-step"><span class="guide-step-num">5</span><span>키 복사 후 위 입력란에 붙여넣고 저장</span></div>
+        </div>
+      </div>
+
+      <!-- GPT -->
+      <div class="api-card" id="card-gpt" onclick="selectApi('gpt')">
+        <div class="api-card-hd">
+          <div class="api-icon" style="background:#E8F5EF;">🤖</div>
+          <div>
+            <div class="api-name">GPT-4o (OpenAI)</div>
+            <div class="api-desc">대중적 · 안정적 · 빠른 응답</div>
+          </div>
+          <span class="api-badge badge-best">BEST</span>
+        </div>
+        <div class="api-input-row" onclick="event.stopPropagation()">
+          <input class="api-input" id="key-gpt" type="password" placeholder="sk-...">
+          <button class="btn-save-key" onclick="saveKey('gpt',event)">저장</button>
+        </div>
+        <div class="key-status empty" id="status-gpt">키 없음</div>
+        <div style="margin-top:8px; font-size:10px; color:var(--text-muted);">
+          발급: <a href="https://platform.openai.com/api-keys" target="_blank" style="color:var(--blue)">platform.openai.com/api-keys</a>
+          · 모델: gpt-4o
+        </div>
+      </div>
+
+      <!-- Gemini -->
+      <div class="api-card" id="card-gemini" onclick="selectApi('gemini')">
+        <div class="api-card-hd">
+          <div class="api-icon" style="background:#EBF0FF;">✨</div>
+          <div>
+            <div class="api-name">Gemini (Google)</div>
+            <div class="api-desc">무료 한도 큼 · 시작하기 좋음</div>
+          </div>
+          <span class="api-badge badge-free">FREE</span>
+        </div>
+        <div class="api-input-row" onclick="event.stopPropagation()">
+          <input class="api-input" id="key-gemini" type="password" placeholder="AIzaSy...">
+          <button class="btn-save-key" onclick="saveKey('gemini',event)">저장</button>
+        </div>
+        <div class="key-status empty" id="status-gemini">키 없음</div>
+        <div style="margin-top:8px; font-size:10px; color:var(--text-muted);">
+          발급: <a href="https://aistudio.google.com/apikey" target="_blank" style="color:var(--blue)">aistudio.google.com/apikey</a>
+          · 모델: gemini-1.5-flash
+        </div>
+        <div class="guide-toggle" onclick="toggleGuide('guide-gemini')">
+          <span class="guide-arrow" id="arr-guide-gemini">▶</span>
+          <span>API 키 발급 방법 보기 (무료)</span>
+        </div>
+        <div class="guide-box" id="guide-gemini">
+          <div class="guide-step"><span class="guide-step-num">1</span><span><a class="guide-link" href="https://aistudio.google.com/apikey" target="_blank">aistudio.google.com/apikey</a> 접속</span></div>
+          <div class="guide-step"><span class="guide-step-num">2</span><span>구글 계정으로 로그인</span></div>
+          <div class="guide-step"><span class="guide-step-num">3</span><span><strong>Create API Key</strong> 클릭</span></div>
+          <div class="guide-step"><span class="guide-step-num">4</span><span>키 복사 후 위 입력란에 붙여넣고 저장</span></div>
+        </div>
+      </div>
+
+      <div style="margin-top:16px; display:flex; gap:8px;">
+        <button class="btn-sm" onclick="clearKeys()" style="flex:1;">🗑️ API 키 모두 삭제</button>
+        <button class="btn-sm" onclick="clearAll()" style="flex:1;">⚠️ 모든 데이터 초기화</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ════════════════ RIGHT PANEL ════════════════ -->
+<div class="right">
+
+  <div>
+    <div class="rp-label">API 상태</div>
+    <div class="api-status-bar" id="api-status-bar">
+      <div class="status-dot empty" id="status-dot"></div>
+      <span class="status-text" id="status-text">API 키를 설정하세요</span>
+      <span class="status-model" id="status-model-text">-</span>
+    </div>
+  </div>
+
+  <div>
+    <div class="rp-label">레이어 현황 <span id="layer-source-tag" style="font-size:9px;color:var(--gold);font-weight:600;"></span></div>
+    <div class="layer-mini" id="layer-mini">
+      <div class="lm-row"><div class="lm-dot empty" id="dot-1"></div><span class="lm-k">L1</span><span class="lm-v" id="lm-1">앵글/세팅</span></div>
+      <div class="lm-row"><div class="lm-dot empty" id="dot-2"></div><span class="lm-k">L2</span><span class="lm-v" id="lm-2">제품 상태</span></div>
+      <div class="lm-row"><div class="lm-dot empty" id="dot-3"></div><span class="lm-k">L3</span><span class="lm-v" id="lm-3">빛</span></div>
+      <div class="lm-row"><div class="lm-dot empty" id="dot-4"></div><span class="lm-k">L4</span><span class="lm-v" id="lm-4">배경/소재</span></div>
+      <div class="lm-row"><div class="lm-dot empty" id="dot-5"></div><span class="lm-k">L5</span><span class="lm-v" id="lm-5">연출 요소</span></div>
+      <div class="lm-row"><div class="lm-dot empty" id="dot-6"></div><span class="lm-k">L6</span><span class="lm-v" id="lm-6">색/톤</span></div>
+      <div class="lm-row"><div class="lm-dot empty" id="dot-7"></div><span class="lm-k">L7</span><span class="lm-v" id="lm-7">스타일 코드</span></div>
+      <div class="lm-row"><div class="lm-dot empty" id="dot-8"></div><span class="lm-k">L8</span><span class="lm-v" id="lm-8">카메라 <span style="font-size:9px;color:var(--gold)">선택</span></span></div>
+    </div>
+  </div>
+
+  <div style="flex:1; display:flex; flex-direction:column; min-height:0;">
+    <div class="rp-label">완성 프롬프트</div>
+    <div class="prompt-box">
+      <div>
+        <div class="prompt-section-label">한국어 연출 설명</div>
+        <div class="prompt-ko" id="prompt-ko">이미지를 분석하거나 레이어를 조합하면 생성됩니다.</div>
+      </div>
+      <div>
+        <div class="prompt-section-label">영문 프롬프트</div>
+        <div class="prompt-en" id="prompt-en">Upload, analyze, or combine layers to generate prompt...</div>
+        <div class="prompt-extra" id="prompt-extra" style="display:none"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="btn-row">
+    <button class="btn-main" id="btn-copy" onclick="copyPrompt()">프롬프트 복사</button>
+    <button class="btn-gold" onclick="randomPick()">랜덤</button>
+    <button class="btn-sm" onclick="resetAll()">전체 초기화</button>
+  </div>
+
+</div>
+</div>
+
+<!-- ════════════════ MODALS ════════════════ -->
+
+<!-- SAVE MODAL -->
+<div class="overlay" id="save-overlay" onclick="closeSaveModal(event)">
+  <div class="modal sm">
+    <button class="modal-x" onclick="closeSaveModal()">✕</button>
+    <div class="modal-title">💾 라이브러리에 저장</div>
+    <div class="modal-label">이름 <span style="color:var(--red)">*</span></div>
+    <input class="modal-input" id="save-name" placeholder="예) 나노아 세럼 클린컷" maxlength="30">
+    <div class="modal-label">메모 (선택)</div>
+    <input class="modal-input" id="save-memo" placeholder="예) 여름 캠페인용, 화이트 배경 버전">
+    <button class="modal-btn" onclick="saveTemplate()">저장하기</button>
+  </div>
+</div>
+
+<!-- TEMPLATE PICKER MODAL (from custom subtab) -->
+<div class="overlay" id="picker-overlay" onclick="closePicker(event)">
+  <div class="modal">
+    <button class="modal-x" onclick="closePicker()">✕</button>
+    <div class="modal-title">템플릿 선택</div>
+    <div class="modal-filter" id="modal-filter">
+      <span class="chip active" onclick="modalFilter('전체',this)">전체</span>
+      <span class="chip" onclick="modalFilter('클린/기본',this)">클린/기본</span>
+      <span class="chip" onclick="modalFilter('빛/조명',this)">빛/조명</span>
+      <span class="chip" onclick="modalFilter('텍스처/임팩트',this)">텍스처</span>
+      <span class="chip" onclick="modalFilter('라이프스타일',this)">라이프스타일</span>
+      <span class="chip" onclick="modalFilter('시즌/날씨',this)">시즌/날씨</span>
+      <span class="chip" onclick="modalFilter('특수기법',this)">특수기법</span>
+      <span class="chip" onclick="modalFilter('공간/환경',this)">공간/환경</span>
+      <span class="chip" onclick="modalFilter('카테고리전용',this)">카테고리전용</span>
+      <span class="chip" onclick="modalFilter('문화권',this)">문화권</span>
+    </div>
+    <div class="modal-grid" id="modal-grid"></div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════
+// DATA
+// ══════════════════════════════════
+const TEMPLATES = [
+  {id:'001',group:'클린/기본',gc:'gc-basic',name:'클린 화이트 팩샷',def:'제품을 가장 명확하게 보여주는 기본컷',product:['스킨케어','메이크업','향수','바디/헤어'],layers:{L1:'하이앵글 45도',L2:'단독 세움',L3:'소프트박스 탑라이트',L4:'순백 (Pure White)',L5:'없음',L6:'하이키 (밝고 플랫)',L7:'클린 미니멀'},ko:'화이트 배경 제품 단독, 소프트박스 균일조명, 그림자 최소화, 하이키 클린',en:'product on pure white background, soft even lighting, no shadows, high key, clean minimal, professional product photography'},
+  {id:'002',group:'클린/기본',gc:'gc-basic',name:'블랙 럭셔리',def:'딥블랙+드라마틱 조명으로 프리미엄 이미지',product:['스킨케어','향수'],layers:{L1:'아이레벨',L2:'단독 세움',L3:'스포트 하드',L4:'딥블랙',L5:'골드 트레이/소품',L6:'로우키 (어둡고 드라마틱)',L7:'다크 럭셔리'},ko:'딥블랙 배경 단독, 스포트 사이드+림라이트, 골드 소품, 로우키 하이콘트라스트',en:'luxury product on black background, dramatic spot lighting, rim light, deep shadows, gold accent props, low key high contrast, premium aesthetic'},
+  {id:'003',group:'클린/기본',gc:'gc-basic',name:'대리석 럭셔리 정물',def:'대리석 위 제품+소품. 럭셔리+클린 동시 구현',product:['스킨케어','향수'],layers:{L1:'하이앵글 45도',L2:'단독 세움',L3:'45도 사이드 소프트박스',L4:'화이트 대리석',L5:'골드 트레이/소품',L6:'뉴트럴 (자연)',L7:'다크 럭셔리'},ko:'화이트 대리석 위 제품, 45도 사이드 소프트, 골드 소품, 뉴트럴쿨',en:'product on white marble surface, soft side lighting, gold props, high angle, elegant composition, luxury beauty product photography'},
+  {id:'004',group:'빛/조명',gc:'gc-light',name:'워터드롭 수분컷',def:'물방울+수분 연출로 보습 효능 시각화',product:['스킨케어'],layers:{L1:'아이레벨',L2:'단독 세움',L3:'백라이트',L4:'순백 (Pure White)',L5:'물방울/이슬',L6:'하이키 (밝고 플랫)',L7:'워터/수분'},ko:'수분 제품 표면 물방울, 백라이트, 하이키 쿨뉴트럴 수분컷',en:'skincare product with water drops, dew drops on surface, soft backlight, cool clean tones, hydration visual, high key product photography'},
+  {id:'005',group:'빛/조명',gc:'gc-light',name:'골든아워 라이프스타일',def:'골든아워 자연광으로 따뜻한 생활감',product:['스킨케어','바디/헤어'],layers:{L1:'아이레벨',L2:'단독 세움',L3:'골든아워 역광',L4:'창가/창틀',L5:'린넨/패브릭',L6:'웜 (골든아워)',L7:'라이프스타일 UGC'},ko:'골든아워 역광 창가 라이프스타일, 린넨 소품, 웜골드 감성',en:'product in golden hour window light, warm amber tones, long soft shadows, linen props, lifestyle aesthetic, warm natural beauty photography'},
+  {id:'006',group:'빛/조명',gc:'gc-light',name:'그림자 패턴 정물',def:'빛과 그림자 패턴으로 예술적 분위기',product:['스킨케어','메이크업','향수'],layers:{L1:'하이앵글 45도',L2:'단독 세움',L3:'한낮 직사광',L4:'순백 (Pure White)',L5:'하드 패턴 섀도우',L6:'하이키 (밝고 플랫)',L7:'에디토리얼 아방가르드'},ko:'직사광 그림자 패턴 예술컷, 화이트 배경, 패턴 섀도우 주인공',en:'product with dramatic shadow pattern, leaf or geometric shadows, strong side natural light, high key high contrast, artistic shadow play'},
+  {id:'007',group:'텍스처/임팩트',gc:'gc-texture',name:'세럼 드롭 임팩트',def:'세럼 방울 낙하 순간포착. 임팩트 최강',product:['스킨케어'],layers:{L1:'매크로 클로즈업',L2:'내용물 노출',L3:'스포트 하드',L4:'딥블랙',L5:'세럼 드롭 고속셔터',L6:'로우키 (어둡고 드라마틱)',L7:'다크 럭셔리'},ko:'세럼 방울 낙하 고속포착, 딥블랙, 스포트 하드, 로우키 임팩트',en:'serum drop falling, high speed capture, dark background, dramatic side light, liquid drop close up, macro photography, high contrast, premium serum shot'},
+  {id:'008',group:'텍스처/임팩트',gc:'gc-texture',name:'크림 텍스처 스쿱',def:'크림 텍스처 클로즈업. 구매전환율 높음',product:['스킨케어'],layers:{L1:'매크로 클로즈업',L2:'내용물 노출',L3:'45도 사이드 소프트박스',L4:'오프화이트/크림',L5:'크림 스쿱/텍스처',L6:'뉴트럴 (자연)',L7:'클린 미니멀'},ko:'스패출라 크림 스쿱, 45도 사이드 질감 강조, 매크로 클로즈업',en:'cream texture scoop on spatula, rich creamy texture close up, side lighting emphasizing texture, macro shot, neutral background'},
+  {id:'009',group:'텍스처/임팩트',gc:'gc-texture',name:'파우더 스플래시',def:'파우더 비산 역동적 순간포착. SNS 최강',product:['메이크업'],layers:{L1:'아이레벨',L2:'내용물 노출',L3:'스포트 하드',L4:'딥블랙',L5:'파우더 비산',L6:'로우키 (어둡고 드라마틱)',L7:'에디토리얼 아방가르드'},ko:'파우더 비산 고속셔터, 다크 배경, 측면 스포트, 임팩트',en:'powder product explosion, powder burst, high speed photography, dark background, dramatic side lighting, pigment cloud, dynamic product shot'},
+  {id:'010',group:'라이프스타일',gc:'gc-lifestyle',name:'플랫레이 라이프스타일',def:'버즈아이 제품+소품 감성 배치. 인스타 필수',product:['스킨케어','메이크업','바디/헤어'],layers:{L1:'탑다운 (버즈아이)',L2:'군집 / 라인업',L3:'소프트박스 탑라이트',L4:'린넨',L5:'드라이플라워',L6:'웜 (골든아워)',L7:'라이프스타일 UGC'},ko:'버즈아이 플랫레이, 린넨 배경, 드라이플라워 소품, 웜뉴트럴',en:'product flat lay overhead shot, linen background, minimal lifestyle props, soft diffused daylight, warm neutral tones, instagram aesthetic'},
+  {id:'011',group:'라이프스타일',gc:'gc-lifestyle',name:'아침 창문빛 정물',def:'아침 창문빛 소프트 섀도우 모닝루틴',product:['스킨케어','바디/헤어'],layers:{L1:'아이레벨',L2:'단독 세움',L3:'아침 창문빛',L4:'순백 (Pure White)',L5:'소프트 섀도우',L6:'웜 (골든아워)',L7:'라이프스타일 UGC'},ko:'아침 창문 사이드광, 소프트 롱 섀도우, 화이트 배경, 모닝루틴',en:'product in morning window light, soft long side shadow, warm neutral tones, white background, serene morning mood, lifestyle beauty product photography'},
+  {id:'012',group:'라이프스타일',gc:'gc-lifestyle',name:'코지 홈 라이프스타일',def:'실제 생활공간 속 제품. UGC 진정성',product:['스킨케어','바디/헤어'],layers:{L1:'아이레벨',L2:'단독 세움',L3:'아침 창문빛',L4:'욕실 타일',L5:'없음',L6:'뉴트럴 (자연)',L7:'라이프스타일 UGC'},ko:'실제 욕실/침실 환경, 자연광, 생활감 배치, UGC 진정성',en:'product naturally placed in real home, bathroom or bedroom environment, warm window light, lived-in aesthetic, real home not studio, UGC feel'},
+  {id:'013',group:'라이프스타일',gc:'gc-lifestyle',name:'성분 스토리텔링',def:'원료+제품 동시 노출 성분 신뢰',product:['스킨케어'],layers:{L1:'하이앵글 45도',L2:'군집 / 라인업',L3:'오버캐스트 확산광',L4:'순백 (Pure White)',L5:'생화 배치',L6:'뉴트럴 (자연)',L7:'보타니컬 클린'},ko:'원료+제품 동시 노출, 확산 자연광, 성분 스토리텔링',en:'skincare product with raw ingredients, natural ingredient source next to product, botanical extract visual, soft daylight, ingredient storytelling photography'},
+  {id:'014',group:'특수기법',gc:'gc-material',name:'와비사비 정물',def:'불완전한 자연미. 일본 감성 오가닉',product:['스킨케어','바디/헤어'],layers:{L1:'하이앵글 45도',L2:'단독 세움',L3:'오버캐스트 확산광',L4:'화지 (和紙)',L5:'도자기/세라믹',L6:'탈채도/뮤트',L7:'보타니컬 클린'},ko:'도자기+화지 와비사비 소품, 확산 자연광, 어스웜 탈채도',en:'product with wabi-sabi styling, ceramic pottery and stone props, soft diffused natural light, earthy muted tones, imperfect beauty, Japanese aesthetic'},
+  {id:'015',group:'특수기법',gc:'gc-material',name:'프리즘 아트컷',def:'프리즘 굴절광 예술적 임팩트. 차별화',product:['스킨케어','향수'],layers:{L1:'아이레벨',L2:'단독 세움',L3:'프리즘 레인보우',L4:'순백 (Pure White)',L5:'프리즘 굴절',L6:'하이키 (밝고 플랫)',L7:'에디토리얼 아방가르드'},ko:'프리즘 레인보우 굴절광, 화이트 배경, 예술적 빛 연출',en:'product with prism light refraction, rainbow light dispersion around product, crystal prism effect, white background, artistic light play, premium editorial photography'},
+  {id:'016',group:'특수기법',gc:'gc-material',name:'실크/패브릭 럭셔리',def:'실크/벨벳 소재로 관능적 고급감',product:['향수','메이크업'],layers:{L1:'아이레벨',L2:'단독 세움',L3:'림라이트',L4:'실크/새틴',L5:'없음',L6:'로우키 (어둡고 드라마틱)',L7:'다크 럭셔리'},ko:'실크/새틴 패브릭 배경, 림라이트, 관능적 럭셔리 에디토리얼',en:'product on silk or velvet fabric, fabric drape texture, rim lighting, luxurious material background, sensual product photography, high fashion beauty editorial'},
+  {id:'017',group:'라이프스타일',gc:'gc-effect',name:'수중 판타지',def:'물속 제품으로 수분/성분 판타지',product:['스킨케어'],layers:{L1:'아이레벨',L2:'공중부양 (레비테이션)',L3:'코스틱 굴절광',L4:'수중 (Underwater)',L5:'물속 수중',L6:'쿨 (그늘/흐린날)',L7:'워터/수분'},ko:'물속 제품 수중, 블루 코스틱광, 기포, 수분 판타지',en:'product submerged underwater, blue water, air bubbles, caustic light, water refraction patterns, cool blue tones, aquatic fantasy, underwater product photography'},
+  {id:'018',group:'라이프스타일',gc:'gc-effect',name:'얼음 쿨링컷',def:'얼음 위/속 제품으로 쿨링 효능 직관',product:['스킨케어'],layers:{L1:'아이레벨',L2:'단독 세움',L3:'스포트 하드',L4:'자연 (숲/이끼/바위)',L5:'얼음 결정',L6:'쿨 (그늘/흐린날)',L7:'워터/수분'},ko:'얼음 위/속 제품, 블루 스포트, 쿨링 시각화, 여름 시즌',en:'product on crushed ice, ice crystals, cool blue side lighting, water droplets, frozen aesthetic, cold temperature visual, high contrast blue tones, cooling product shot'},
+  {id:'019',group:'텍스처/임팩트',gc:'gc-effect',name:'거품/폼 클로즈업',def:'풍성한 거품 텍스처로 세정력 시각화',product:['스킨케어','바디/헤어'],layers:{L1:'매크로 클로즈업',L2:'내용물 노출',L3:'소프트박스 탑라이트',L4:'순백 (Pure White)',L5:'거품/버블',L6:'하이키 (밝고 플랫)',L7:'클린 미니멀'},ko:'클렌저 거품 텍스처, 손 위 풍성한 폼, 소프트 조명 매크로',en:'rich foam cleanser texture, abundant lather on hand, soft lighting, macro close up, foam bubble texture, white creamy foam, cleanser product photography'},
+  {id:'020',group:'특수기법',gc:'gc-effect',name:'향수 전용컷',def:'유리병 투과 역광+향 시각화. 향수 필수',product:['향수'],layers:{L1:'로우앵글',L2:'단독 세움',L3:'백라이트',L4:'딥블랙',L5:'안개/포그',L6:'로우키 (어둡고 드라마틱)',L7:'다크 럭셔리'},ko:'향수병 역광 유리 투과, 안개로 향 시각화, 로우키 드라마틱',en:'perfume bottle backlit, glass translucency, light through glass bottle, smoke or scent visualization, dark dramatic background, fragrance product photography'},
+  {id:'021',group:'시즌/날씨',gc:'gc-season',name:'새벽 블루아워',def:'블루아워 틸블루로 신비롭고 서정적',product:['스킨케어','향수'],layers:{L1:'아이레벨',L2:'단독 세움',L3:'블루아워',L4:'창가/창틀',L5:'보케 배경',L6:'초쿨 (블루아워)',L7:'다크 럭셔리'},ko:'블루아워 틸블루, 도시불빛 보케, 나이트케어 서정 감성',en:'product in blue hour twilight light, teal blue atmosphere, city lights bokeh, cool muted tones, mysterious serene mood, dusk product photography'},
+  {id:'022',group:'시즌/날씨',gc:'gc-season',name:'비오는날 제품컷',def:'빗방울+젖은 표면 반사로 감성 촉촉 무드',product:['스킨케어'],layers:{L1:'아이레벨',L2:'단독 세움',L3:'오버캐스트 확산광',L4:'창가/창틀',L5:'물방울/이슬',L6:'쿨 (그늘/흐린날)',L7:'워터/수분'},ko:'유리창 빗방울, 흐린날 확산광, 쿨뉴트럴 탈채도 감성컷',en:'product behind rainy window glass, rain drops on glass, wet surface reflection, overcast diffused light, moody atmosphere, cool desaturated tones, rainy day aesthetic'},
+  {id:'023',group:'시즌/날씨',gc:'gc-season',name:'겨울 서리/눈',def:'눈 결정+서리로 차갑고 크리스털한 겨울',product:['스킨케어'],layers:{L1:'하이앵글 45도',L2:'단독 세움',L3:'스포트 하드',L4:'자연 (숲/이끼/바위)',L5:'얼음 결정',L6:'초쿨 (블루아워)',L7:'워터/수분'},ko:'눈 결정 서리 크리스털, 쿨 블루화이트, 겨울 시즌 쿨링컷',en:'product on snow with frost crystals, ice crystal details, cool blue white tones, soft cool lighting, winter aesthetic, frozen nature, crisp cold atmosphere'},
+  {id:'024',group:'시즌/날씨',gc:'gc-season',name:'여름 직사광',def:'강한 직사광+선명 그림자. 활기차고 역동적',product:['스킨케어','바디/헤어'],layers:{L1:'탑다운 (버즈아이)',L2:'단독 세움',L3:'한낮 직사광',L4:'오프화이트/크림',L5:'하드 패턴 섀도우',L6:'하이비비드 (선명)',L7:'라이프스타일 UGC'},ko:'강한 직사광 선명 섀도우, 여름 소품, 하이키 비비드 여름',en:'product in harsh summer sunlight, strong sharp shadows, high contrast, bright vibrant tones, sandy surface, seashell or tropical props, summer beauty product photography'},
+  {id:'025',group:'시즌/날씨',gc:'gc-season',name:'가을 낙엽 제품컷',def:'단풍+낙엽으로 따뜻하고 성숙한 가을',product:['스킨케어','향수','바디/헤어'],layers:{L1:'하이앵글 45도',L2:'단독 세움',L3:'골든아워 역광',L4:'화지 (和紙)',L5:'잎/나뭇가지',L6:'초웜 (캔들/앰버)',L7:'골든/웜 럭셔리'},ko:'가을 단풍 소품, 골든아워 사이드광, 웜앰버 어스톤, 가을 감성',en:'product with autumn leaves, fall foliage, warm amber golden hour light, earthy warm tones, wooden surface, cozy autumn atmosphere, fall seasonal beauty product photography'},
+  {id:'026',group:'특수기법',gc:'gc-technique',name:'더블 익스포저',def:'제품+성분 이중 노출 예술적 스토리텔링',product:['스킨케어'],layers:{L1:'아이레벨',L2:'단독 세움',L3:'스포트 하드',L4:'딥블랙',L5:'안개/포그',L6:'탈채도/뮤트',L7:'에디토리얼 아방가르드'},ko:'제품+원료 이중 노출 투명 중첩, 다크 배경, 예술적 성분 표현',en:'double exposure product and botanical, product blended with natural ingredients, transparent overlay effect, artistic surreal composition, dark moody background'},
+  {id:'027',group:'특수기법',gc:'gc-technique',name:'틸트쉬프트',def:'선택적 포커스로 미니어처처럼 보이는',product:['스킨케어','메이크업'],layers:{L1:'하이앵글 45도',L2:'군집 / 라인업',L3:'소프트박스 탑라이트',L4:'오프화이트/크림',L5:'없음',L6:'뉴트럴 (자연)',L7:'에디토리얼 아방가르드'},ko:'틸트쉬프트 선택 포커스, 미니어처 효과, 위아래 흐림',en:'tilt shift product photography, selective focus miniature effect, top and bottom blur, sharp middle plane, toy-like aesthetic, creative angle, artistic product photography'},
+  {id:'028',group:'특수기법',gc:'gc-technique',name:'필름 라이트리크',def:'필름 빛 번짐 효과로 레트로 아날로그',product:['스킨케어','메이크업'],layers:{L1:'아이레벨',L2:'단독 세움',L3:'렌즈플레어',L4:'오프화이트/크림',L5:'없음',L6:'필름룩 (그레인)',L7:'빈티지/필름'},ko:'필름 라이트리크 빛번짐, 아날로그 감성, 필름그레인 레트로',en:'product with film light leak effect, analog light bleed, warm color leak, film grain texture, vintage aesthetic, retro photography feel, nostalgic beauty product shot'},
+  {id:'029',group:'특수기법',gc:'gc-technique',name:'무한 거울 반사',def:'두 거울 사이 무한 반사. 초현실적 공간감',product:['향수'],layers:{L1:'아이레벨',L2:'단독 세움',L3:'소프트박스 탑라이트',L4:'그레이',L5:'거울 반사',L6:'뉴트럴 (자연)',L7:'다크 럭셔리'},ko:'두 거울 사이 무한 반사, 초현실 공간감, 럭셔리 향수',en:'product between two mirrors, infinite reflection tunnel, mirror reflection product photography, surreal depth, endless repetition, cool neutral tones, luxury aesthetic'},
+  {id:'030',group:'특수기법',gc:'gc-technique',name:'롱익스포저 빛궤적',def:'장노출 빛 궤적으로 에너지 시각화',product:['스킨케어'],layers:{L1:'아이레벨',L2:'단독 세움',L3:'고드레이 빛줄기',L4:'딥블랙',L5:'빛 궤적 (장노출)',L6:'로우키 (어둡고 드라마틱)',L7:'에디토리얼 아방가르드'},ko:'장노출 빛 궤적, 다크 배경, 에너지 시각화, 아트 디렉션',en:'product with light trails, long exposure, light painting around product, dark background, glowing light streaks, energy visualization, creative beauty product photography'},
+  {id:'031',group:'공간/환경',gc:'gc-space',name:'야외 자연 직접 배치',def:'숲/이끼/바위 위 배치. 오가닉 성분 연결',product:['스킨케어','바디/헤어'],layers:{L1:'아이레벨',L2:'단독 세움',L3:'오버캐스트 확산광',L4:'자연 (숲/이끼/바위)',L5:'이끼/돌',L6:'탈채도/뮤트',L7:'보타니컬 클린'},ko:'숲 바닥 이끼 자연 배치, 확산 자연광, 딥그린 어스톤 오가닉',en:'product placed directly in forest floor, moss and stones, dappled forest light, deep green earthy tones, natural setting, organic beauty, nature product photography'},
+  {id:'032',group:'공간/환경',gc:'gc-space',name:'도심 어반 제품컷',def:'콘크리트 위 제품. 현대적 어반 무드',product:['메이크업','스킨케어'],layers:{L1:'로우앵글',L2:'단독 세움',L3:'한낮 직사광',L4:'오프화이트/크림',L5:'하드 패턴 섀도우',L6:'탈채도/뮤트',L7:'에디토리얼 아방가르드'},ko:'콘크리트 어반 배경, 도시 자연광, 쿨 탈채도 스트리트 감성',en:'product on concrete surface, urban setting, strong shadows, industrial aesthetic, cool desaturated tones, city environment, modern edgy product photography'},
+  {id:'033',group:'공간/환경',gc:'gc-space',name:'창틀 위 제품컷',def:'창틀+창밖 보케로 깊이감 있는 라이프스타일',product:['스킨케어','향수'],layers:{L1:'아이레벨',L2:'단독 세움',L3:'아침 창문빛',L4:'창가/창틀',L5:'보케 배경',L6:'뉴트럴 (자연)',L7:'라이프스타일 UGC'},ko:'창틀 위 제품, 창밖 보케, 자연광, 라이프스타일 깊이감',en:'product on window sill, window frame, bokeh outdoor view through window, soft natural window light, lifestyle aesthetic, depth of field, window product photography'},
+  {id:'034',group:'공간/환경',gc:'gc-space',name:'수영장/욕조 엣지',def:'물가 경계면 위. 수분+럭셔리 동시',product:['바디/헤어','스킨케어'],layers:{L1:'로우앵글',L2:'단독 세움',L3:'코스틱 굴절광',L4:'수중 (Underwater)',L5:'수면 반사',L6:'쿨 (그늘/흐린날)',L7:'워터/수분'},ko:'수영장/욕조 엣지, 코스틱 물 반사, 리조트 럭셔리 감성',en:'product on pool edge, water surface nearby, water caustic light reflections, cool blue tones, luxury resort aesthetic, water ripple reflections, poolside beauty photography'},
+  {id:'035',group:'공간/환경',gc:'gc-space',name:'카페 테이블 제품컷',def:'카페 테이블+음료. 자연스러운 라이프스타일',product:['스킨케어','바디/헤어'],layers:{L1:'하이앵글 45도',L2:'단독 세움',L3:'아침 창문빛',L4:'오프화이트/크림',L5:'없음',L6:'웜 (골든아워)',L7:'라이프스타일 UGC'},ko:'카페 창가 테이블, 커피 소품, 웜뉴트럴 라이프스타일',en:'product on cafe table with coffee, warm cafe window light, bokeh interior, lifestyle product placement, natural candid cafe aesthetic, warm neutral tones'},
+  {id:'036',group:'공간/환경',gc:'gc-space',name:'욕실 선반 배치컷',def:'실제 욕실 선반 위 라인업. 루틴 자연스럽게',product:['스킨케어'],layers:{L1:'아이레벨',L2:'군집 / 라인업',L3:'아침 창문빛',L4:'욕실 타일',L5:'없음',L6:'뉴트럴 (자연)',L7:'라이프스타일 UGC'},ko:'실제 욕실 선반 라인업, 창문 자연광, 생활감 있는 배치',en:'skincare products on bathroom shelf, real bathroom environment, white tiles, natural bathroom light, lived-in aesthetic, routine product arrangement, shelfie photography'},
+  {id:'037',group:'색테마',gc:'gc-color',name:'모노크롬 컬러매칭',def:'제품+배경+소품 동일 색. 강렬한 컬러 아이덴티티',product:['메이크업'],layers:{L1:'하이앵글 45도',L2:'단독 세움',L3:'소프트박스 탑라이트',L4:'파스텔 컬러',L5:'없음',L6:'뉴트럴 (자연)',L7:'에디토리얼 아방가르드'},ko:'제품+배경+소품 동일 색 톤온톤, 강렬한 컬러 아이덴티티',en:'monochromatic product photography, product and background same color family, tone on tone styling, color matching props, pink on pink or beige on beige, cohesive color aesthetic'},
+  {id:'038',group:'색테마',gc:'gc-color',name:'보색 대비 임팩트',def:'배경+제품이 보색. 시각적 임팩트 극대화',product:['메이크업'],layers:{L1:'아이레벨',L2:'단독 세움',L3:'소프트박스 탑라이트',L4:'파스텔 컬러',L5:'없음',L6:'하이비비드 (선명)',L7:'에디토리얼 아방가르드'},ko:'보색 배경 대비, 하이비비드 임팩트, 컬러 론칭 임팩트컷',en:'complementary color contrast product shot, bold color background opposing product color, teal and orange, purple and yellow, high vibrance, strong visual impact'},
+  {id:'039',group:'색테마',gc:'gc-color',name:'파스텔 드림컷',def:'전체 파스텔 팔레트로 몽환적이고 부드러운',product:['메이크업','스킨케어'],layers:{L1:'하이앵글 45도',L2:'단독 세움',L3:'소프트박스 탑라이트',L4:'파스텔 컬러',L5:'꽃잎 흩날림',L6:'하이키 (밝고 플랫)',L7:'파스텔 소프트'},ko:'파스텔 배경+꽃잎 소품, 소프트 확산광, 하이키 드림 감성',en:'pastel dream product photography, soft pastel pink or lavender background, dreamy soft focus, gentle diffused light, romantic aesthetic, pastel props, soft feminine beauty product shot'},
+  {id:'040',group:'색테마',gc:'gc-color',name:'네온 사이버컷',def:'네온 조명+딥다크 배경. 사이버펑크/Y2K',product:['메이크업'],layers:{L1:'로우앵글',L2:'단독 세움',L3:'스포트 하드',L4:'딥블랙',L5:'없음',L6:'로우키 (어둡고 드라마틱)',L7:'에디토리얼 아방가르드'},ko:'네온 컬러조명 딥다크 배경, 글리터 메탈릭, Y2K 사이버펑크',en:'product with neon lighting, dark background, cyberpunk aesthetic, neon purple blue pink, Y2K vibe, metallic reflections, glitter, high contrast vibrant colors'},
+  {id:'041',group:'색테마',gc:'gc-color',name:'블랙앤화이트 질감컷',def:'완전 모노크롬으로 질감과 형태 극대화',product:['스킨케어','메이크업','향수'],layers:{L1:'아이레벨',L2:'단독 세움',L3:'45도 사이드 소프트박스',L4:'그레이',L5:'없음',L6:'모노크롬',L7:'클린 미니멀'},ko:'완전 모노크롬, 질감+형태 극대화, 타임리스 클래식',en:'black and white product photography, monochrome, strong contrast, texture and form emphasis, classic timeless aesthetic, no color, pure form beauty product shot'},
+  {id:'042',group:'특수기법',gc:'gc-motion',name:'슬로우모션 텍스처',def:'극슬로우모션으로 텍스처 움직임 시각화',product:['스킨케어'],layers:{L1:'매크로 클로즈업',L2:'내용물 노출',L3:'45도 사이드 소프트박스',L4:'딥블랙',L5:'크림 스쿱/텍스처',L6:'뉴트럴 (자연)',L7:'클린 미니멀'},ko:'슬로우모션 텍스처 움직임, 크림 늘어남, 세럼 드롭, 영상 프레임',en:'slow motion product texture, 240fps high speed cream stretching, serum drop falling slow motion, rich texture movement, macro close up, side lighting texture emphasis'},
+  {id:'043',group:'특수기법',gc:'gc-motion',name:'제품 360도 회전',def:'턴테이블 전 각도 노출. 패키지 디자인 완전',product:['스킨케어','메이크업','향수'],layers:{L1:'아이레벨',L2:'단독 세움',L3:'소프트박스 탑라이트',L4:'순백 (Pure White)',L5:'없음',L6:'하이키 (밝고 플랫)',L7:'클린 미니멀'},ko:'턴테이블 360도 회전, 균일 전방향 조명, 패키지 완전 노출',en:'product 360 degree rotation, turntable product photography, all angles visible, clean white background, even lighting, no motion blur, ecommerce product video frame'},
+  {id:'044',group:'특수기법',gc:'gc-motion',name:'라이트 스윕',def:'빛이 제품 위를 지나가며 하이라이트 이동',product:['향수','스킨케어'],layers:{L1:'아이레벨',L2:'단독 세움',L3:'스포트 하드',L4:'딥블랙',L5:'빛 궤적 (장노출)',L6:'로우키 (어둡고 드라마틱)',L7:'다크 럭셔리'},ko:'이동하는 스포트 하이라이트, 빛 스윕, 다크 배경, 럭셔리 영상',en:'light sweep across product, moving highlight, dramatic spot light, dark background, light passing over product, luxury cinematic feel, premium beauty video frame'},
+  {id:'045',group:'특수기법',gc:'gc-motion',name:'제품 리빌',def:'안개/빛으로 가려졌다가 드라마틱하게 등장',product:['스킨케어','향수'],layers:{L1:'로우앵글',L2:'단독 세움',L3:'백라이트',L4:'딥블랙',L5:'안개/포그',L6:'로우키 (어둡고 드라마틱)',L7:'다크 럭셔리'},ko:'안개 속 제품 리빌, 역광+스포트, 드라마틱 등장, 론칭 임팩트',en:'product reveal through mist or fog, dramatic product emergence, backlight, fog machine effect, mysterious atmosphere, product revealed from darkness, cinematic reveal'},
+  {id:'046',group:'특수기법',gc:'gc-motion',name:'성분 침투 CG',def:'실사+CG 혼합 성분 침투 시각화',product:['스킨케어'],layers:{L1:'매크로 클로즈업',L2:'내용물 노출',L3:'소프트박스 탑라이트',L4:'순백 (Pure White)',L5:'CG 합성',L6:'하이키 (밝고 플랫)',L7:'과학/테크'},ko:'실사+CG 성분 피부 침투 시각화, 과학적 신뢰감',en:'CG ingredient absorption visualization, skin cross section with glowing particles, active ingredient penetration animation, clean white with glowing blue particles, science beauty CGI'},
+  {id:'047',group:'카테고리전용',gc:'gc-category',name:'립 스와치 전용컷',def:'손등/팔 위 여러 컬러 발색. 색상 스펙트럼 전체',product:['메이크업'],layers:{L1:'탑다운 (버즈아이)',L2:'내용물 노출',L3:'소프트박스 탑라이트',L4:'순백 (Pure White)',L5:'없음',L6:'하이키 (밝고 플랫)',L7:'클린 미니멀'},ko:'립 컬러 손등 스와치, 균일 하이키 조명, 발색 정확도 강조',en:'lip color swatch on hand or arm, multiple shades swatched in a row, clean even lighting, high key, color accuracy focus, lip product swatch photography'},
+  {id:'048',group:'카테고리전용',gc:'gc-category',name:'아이섀도 팔레트컷',def:'팔레트 오픈+팔 스와치. 발색 전체 표현',product:['메이크업'],layers:{L1:'하이앵글 45도',L2:'열린 상태 (뚜껑 오픈)',L3:'소프트박스 탑라이트',L4:'순백 (Pure White)',L5:'없음',L6:'하이키 (밝고 플랫)',L7:'클린 미니멀'},ko:'아이섀도 팔레트 오픈, 팔 스와치 병행, 균일 하이키 발색',en:'eyeshadow palette open flat lay, pigment swatches on arm, clean bright lighting, color accurate, palette and swatches composition, high key, makeup palette photography'},
+  {id:'049',group:'카테고리전용',gc:'gc-category',name:'선케어 자외선컷',def:'자외선 차단 효과 시각적 표현. 선케어 전용',product:['스킨케어'],layers:{L1:'로우앵글',L2:'단독 세움',L3:'한낮 직사광',L4:'순백 (Pure White)',L5:'하드 패턴 섀도우',L6:'하이비비드 (선명)',L7:'라이프스타일 UGC'},ko:'강한 직사광 UV 시각화, 하이키 비비드, 여름 선케어 효능컷',en:'sunscreen product in bright sunlight, UV protection visualization, strong shadows, bright summer light, sun rays visible, high key warm tones, outdoor sun setting, suncare photography'},
+  {id:'050',group:'카테고리전용',gc:'gc-category',name:'마스크팩 전용컷',def:'에센스 흘러내림과 수분 함량 직접 표현',product:['스킨케어'],layers:{L1:'아이레벨',L2:'내용물 노출',L3:'백라이트',L4:'순백 (Pure White)',L5:'물방울/이슬',L6:'하이키 (밝고 플랫)',L7:'워터/수분'},ko:'마스크팩 에센스 흘러내림, 수분 시각화, 하이키 쿨뉴트럴',en:'sheet mask product with essence dripping, serum soaked mask, liquid essence flow, hydration visual, cool neutral tones, backlit moisture effect, high key, mask pack photography'},
+  {id:'051',group:'카테고리전용',gc:'gc-category',name:'바디오일 글로우컷',def:'바디오일 광택+피부 글로우 극대화',product:['바디/헤어'],layers:{L1:'아이레벨',L2:'내용물 노출',L3:'골든아워 역광',L4:'자연 (숲/이끼/바위)',L5:'없음',L6:'웜 (골든아워)',L7:'골든/웜 럭셔리'},ko:'바디오일 피부 글로우, 역광 림라이트, 웜골드 광택 극대화',en:'body oil glow on skin, backlit rim light, warm golden tones, skin luminosity, oil sheen highlight, lifestyle outdoor setting, golden body oil photography'},
+  {id:'052',group:'문화권',gc:'gc-culture',name:'K뷰티 물광컷',def:'물광/글라스스킨 K뷰티 고유 투명감',product:['스킨케어'],layers:{L1:'아이레벨',L2:'단독 세움',L3:'소프트박스 탑라이트',L4:'순백 (Pure White)',L5:'물방울/이슬',L6:'하이키 (밝고 플랫)',L7:'워터/수분'},ko:'K뷰티 물광 글라스스킨, 링라이트 균일 조명, 파스텔핑크 배경',en:'Korean beauty water glow product, glass skin aesthetic, dewy moisture, ring light even illumination, K-beauty hydration product photography'},
+  {id:'053',group:'문화권',gc:'gc-culture',name:'프랑스 에포르리스',def:'꾸민듯 안꾸민 파리지앵. 절제된 고급',product:['스킨케어','향수'],layers:{L1:'아이레벨',L2:'단독 세움',L3:'오버캐스트 확산광',L4:'오프화이트/크림',L5:'없음',L6:'탈채도/뮤트',L7:'클린 미니멀'},ko:'파리지앵 에포르리스, 사이드 자연광, 뉴트럴쿨 탈채도, 절제 고급감',en:'French beauty product photography, effortless chic aesthetic, Parisian style, soft natural side light, neutral cool tones, understated elegance, no over styling, European beauty'},
+  {id:'054',group:'문화권',gc:'gc-culture',name:'미국 하이키 상업컷',def:'밝고 선명. 미국 상업 광고 표준',product:['스킨케어','메이크업'],layers:{L1:'아이레벨',L2:'단독 세움',L3:'소프트박스 탑라이트',L4:'순백 (Pure White)',L5:'없음',L6:'하이비비드 (선명)',L7:'라이프스타일 UGC'},ko:'하이키 균일조명, 비비드 컬러, 밝고 친근한 미국 상업 광고',en:'American commercial beauty product shot, high key bright lighting, vibrant colors, clean white or bold background, inclusive diverse aesthetic, upbeat commercial beauty photography'},
+  {id:'055',group:'문화권',gc:'gc-culture',name:'중동 오리엔탈 럭셔리',def:'골드+딥컬러 장식적 소품. 오리엔탈 럭셔리',product:['향수'],layers:{L1:'하이앵글 45도',L2:'단독 세움',L3:'스포트 하드',L4:'딥블랙',L5:'골드 트레이/소품',L6:'초웜 (캔들/앰버)',L7:'골든/웜 럭셔리'},ko:'오리엔탈 럭셔리, 골드 웜스포트 캔들, 딥컬러 배경, 아라비아 소품',en:'oriental luxury product photography, gold metallic tray, deep rich background, warm gold candlelight, Arabic aesthetic, opulent decoration, silk fabric, Middle Eastern luxury beauty'}
+];
+
+const LAYER_DEFS = [
+  {id:'L1', name:'앵글/세팅', opts:['탑다운 (버즈아이)','하이앵글 45도','아이레벨','로우앵글','매크로 클로즈업','기울임 (더치)']},
+  {id:'L2', name:'제품 상태', opts:['단독 세움','눕힘','열린 상태 (뚜껑 오픈)','군집 / 라인업','공중부양 (레비테이션)','기울임','내용물 노출']},
+  {id:'L3', name:'빛', subs:[
+    {label:'자연광', opts:['아침 창문빛','골든아워 역광','오버캐스트 확산광','한낮 직사광','블루아워']},
+    {label:'스튜디오', opts:['소프트박스 탑라이트','45도 사이드 소프트박스','림라이트','스포트 하드','백라이트','언더라이트']},
+    {label:'특수효과', opts:['렌즈플레어','고드레이 빛줄기','코스틱 굴절광','프리즘 레인보우','보케라이트','글로우']}
+  ]},
+  {id:'L4', name:'배경/소재', subs:[
+    {label:'단색', opts:['순백 (Pure White)','오프화이트/크림','그레이','딥블랙','파스텔 컬러']},
+    {label:'텍스처', opts:['화이트 대리석','블랙 대리석','콘크리트','밝은 원목','다크 원목','린넨','실크/새틴','벨벳','화지 (和紙)','골드 포일','실버 메탈']},
+    {label:'환경', opts:['자연 (숲/이끼/바위)','욕실 타일','창가/창틀','카페 테이블','수영장/욕조','수중 (Underwater)']}
+  ]},
+  {id:'L5', name:'연출 요소', subs:[
+    {label:'물', opts:['물방울/이슬','물 흐름','물속 수중','물 스플래시','수면 반사','수증기/스팀','얼음 결정','얼음속 매립']},
+    {label:'식물', opts:['꽃잎 흩날림','생화 배치','드라이플라워','잎/나뭇가지','이끼/돌','전경 꽃 보케']},
+    {label:'빛/그림자', opts:['하드 패턴 섀도우','소프트 섀도우','그림자 없음','프리즘 굴절','보케 배경','빛 궤적 (장노출)']},
+    {label:'특수', opts:['안개/포그','파우더 비산','거울 반사','무한 거울','CG 합성']},
+    {label:'소품', opts:['골드 트레이/소품','도자기/세라믹','린넨/패브릭','캔들','크리스털/원석','없음']},
+    {label:'텍스처', opts:['크림 스쿱/텍스처','세럼 드롭 고속셔터','거품/버블','액체 흐름']}
+  ]},
+  {id:'L6', name:'색/톤', subs:[
+    {label:'밝기', opts:['하이키 (밝고 플랫)','뉴트럴 (자연)','로우키 (어둡고 드라마틱)']},
+    {label:'채도', opts:['하이비비드 (선명)','탈채도/뮤트','모노크롬']},
+    {label:'색온도', opts:['초웜 (캔들/앰버)','웜 (골든아워)','쿨 (그늘/흐린날)','초쿨 (블루아워)']},
+    {label:'그레이딩', opts:['클린 디지털','필름룩 (그레인)','시네마틱 LUT','파스텔 소프트','빈티지 페이드']}
+  ]},
+  {id:'L7', name:'스타일 코드', opts:['클린 미니멀','다크 럭셔리','보타니컬 클린','워터/수분','골든/웜 럭셔리','과학/테크','빈티지/필름','에디토리얼 아방가르드','파스텔 소프트','라이프스타일 UGC']},
+  {id:'L8', name:'카메라 세팅', optional:true, subs:[
+    {label:'화각 (Focal Length)', opts:['14~24mm 초광각 (공간/왜곡)','35mm 광각 (환경포함)','50mm 표준 (자연스러움)','85mm 인물/뷰티 표준','100~135mm 망원 (배경압축)','매크로 1:1 (텍스처극대화)']},
+    {label:'심도 (Depth of Field)', opts:['f1.2~1.8 극얕은심도 (배경완전용해)','f2.0~2.8 얕은심도 (뷰티표준)','f4.0~5.6 중간심도','f8~11 깊은심도 (제품정물)','f16~22 팬포커스 (전체선명)']},
+    {label:'샷사이즈 (Shot Size)', opts:['XCU 익스트림 클로즈업 (텍스처단독)','CU 클로즈업 (제품전체)','MCU 미디엄 클로즈업','MS 미디엄 (전체+소품)','FS 풀샷 (제품전신)','WS 와이드샷 (제품+환경)']}
+  ]}
+];
+
+// EN map
+const EN_MAP = {
+  L1:{'탑다운 (버즈아이)':'overhead top down shot','하이앵글 45도':'high angle 45 degrees','아이레벨':'eye level','로우앵글':'low angle','매크로 클로즈업':'macro extreme close up','기울임 (더치)':'dutch angle tilted'},
+  L2:{'단독 세움':'single product standing','눕힘':'product laid down','열린 상태 (뚜껑 오픈)':'product open uncapped content visible','군집 / 라인업':'product lineup multiple','공중부양 (레비테이션)':'product levitation floating','내용물 노출':'product texture content exposed'},
+  L3:{'아침 창문빛':'morning window light soft rays','골든아워 역광':'golden hour backlight warm','오버캐스트 확산광':'overcast diffused light no shadows','한낮 직사광':'harsh direct sunlight high contrast','블루아워':'blue hour twilight teal light','소프트박스 탑라이트':'softbox top light even','45도 사이드 소프트박스':'45 degree side softbox soft shadow','림라이트':'rim light edge highlight','스포트 하드':'dramatic spot hard light','백라이트':'backlight translucent glow','언더라이트':'under light bottom illumination','렌즈플레어':'lens flare sun flare','고드레이 빛줄기':'god rays light beams shaft','코스틱 굴절광':'caustic light water refraction pattern','프리즘 레인보우':'prism rainbow light dispersion','보케라이트':'bokeh background lights','글로우':'soft glow luminous ethereal'},
+  L4:{'순백 (Pure White)':'pure white background','오프화이트/크림':'off white cream background','그레이':'neutral gray background','딥블랙':'deep black background','파스텔 컬러':'soft pastel color background','화이트 대리석':'white marble surface','블랙 대리석':'black marble dramatic','콘크리트':'concrete industrial surface','밝은 원목':'light wood natural grain','다크 원목':'dark walnut wood surface','린넨':'linen fabric texture','실크/새틴':'silk satin luxurious fabric','벨벳':'deep velvet fabric','화지 (和紙)':'Japanese washi paper texture','골드 포일':'gold foil metallic','실버 메탈':'silver metallic chrome','자연 (숲/이끼/바위)':'nature setting moss stones forest','욕실 타일':'bathroom white tiles','창가/창틀':'window sill frame','카페 테이블':'cafe table wood','수영장/욕조':'pool edge bathtub rim','수중 (Underwater)':'underwater submerged'},
+  L5:{'물방울/이슬':'water drops dew condensation','물 흐름':'flowing water stream','물속 수중':'product submerged underwater','물 스플래시':'water splash explosion','수면 반사':'water surface reflection','수증기/스팀':'steam mist vapor','얼음 결정':'ice crystals frost','얼음속 매립':'product embedded in ice','꽃잎 흩날림':'falling flower petals scattered','생화 배치':'fresh flowers botanical props','드라이플라워':'dried flowers pressed botanical','잎/나뭇가지':'leaves branches natural props','이끼/돌':'moss and stones natural','전경 꽃 보케':'flower foreground bokeh blur','하드 패턴 섀도우':'dramatic hard shadow pattern','소프트 섀도우':'soft gentle shadow','그림자 없음':'shadowless even lighting','프리즘 굴절':'prism light refraction rainbow','보케 배경':'soft bokeh background','빛 궤적 (장노출)':'light trails long exposure painting','안개/포그':'fog haze misty atmosphere','파우더 비산':'powder burst explosion cloud','거울 반사':'mirror reflection double','무한 거울':'infinite mirror reflection tunnel','CG 합성':'CGI composite visual','골드 트레이/소품':'gold tray metallic props','도자기/세라믹':'ceramic pottery props','린넨/패브릭':'linen fabric soft texture','캔들':'candle warm flame props','크리스털/원석':'crystal gemstone props','없음':'','크림 스쿱/텍스처':'cream scoop rich texture spatula','세럼 드롭 고속셔터':'serum drop falling high speed','거품/버블':'foam bubble rich lather','액체 흐름':'liquid pour oil flow viscous'},
+  L6:{'하이키 (밝고 플랫)':'high key bright airy','뉴트럴 (자연)':'balanced natural exposure','로우키 (어둡고 드라마틱)':'low key dramatic moody','하이비비드 (선명)':'high vibrance saturated bold','탈채도/뮤트':'desaturated muted soft tones','모노크롬':'monochrome black and white','초웜 (캔들/앰버)':'ultra warm amber candle tones','웜 (골든아워)':'warm golden hour tones','쿨 (그늘/흐린날)':'cool blue tones overcast','초쿨 (블루아워)':'cool teal blue hour tones','클린 디지털':'clean crisp digital','필름룩 (그레인)':'film grain analog texture','시네마틱 LUT':'cinematic color grade teal orange','파스텔 소프트':'pastel soft dreamy','빈티지 페이드':'vintage faded nostalgic'},
+  L7:{'클린 미니멀':'clean minimal product photography','다크 럭셔리':'dark luxury premium aesthetic','보타니컬 클린':'botanical clean organic beauty','워터/수분':'water hydration aqua aesthetic','골든/웜 럭셔리':'golden warm luxury opulent','과학/테크':'science tech clinical beauty','빈티지/필름':'vintage film nostalgic retro','에디토리얼 아방가르드':'editorial avant-garde artistic','파스텔 소프트':'pastel soft romantic feminine','라이프스타일 UGC':'lifestyle UGC authentic candid'},
+  L8:{
+    '14~24mm 초광각 (공간/왜곡)':'14-24mm ultra wide angle lens, spatial distortion',
+    '35mm 광각 (환경포함)':'35mm wide angle lens, environmental context included',
+    '50mm 표준 (자연스러움)':'50mm standard lens, natural perspective no distortion',
+    '85mm 인물/뷰티 표준':'85mm portrait lens, flattering compression, beauty standard',
+    '100~135mm 망원 (배경압축)':'100-135mm telephoto lens, background compression, subject isolation',
+    '매크로 1:1 (텍스처극대화)':'macro lens 1:1 ratio, extreme texture detail, micro close up',
+    'f1.2~1.8 극얕은심도 (배경완전용해)':'f1.2-f1.8 extremely shallow depth of field, background completely dissolved into bokeh',
+    'f2.0~2.8 얕은심도 (뷰티표준)':'f2.0-f2.8 shallow depth of field, soft background separation, beauty standard aperture',
+    'f4.0~5.6 중간심도':'f4.0-f5.6 medium depth of field, subject and props in focus',
+    'f8~11 깊은심도 (제품정물)':'f8-f11 deep focus, product still life standard, all details sharp',
+    'f16~22 팬포커스 (전체선명)':'f16-f22 pan focus, everything in sharp focus, flat lay standard',
+    'XCU 익스트림 클로즈업 (텍스처단독)':'extreme close up XCU, texture isolated, single detail fills frame',
+    'CU 클로즈업 (제품전체)':'close up CU, full product in frame, label visible',
+    'MCU 미디엄 클로즈업':'medium close up MCU, product with immediate surroundings',
+    'MS 미디엄 (전체+소품)':'medium shot MS, product with props and context',
+    'FS 풀샷 (제품전신)':'full shot FS, entire product clearly visible',
+    'WS 와이드샷 (제품+환경)':'wide shot WS, product within full environment context'
+  }
+};
+
+// ══════════════════════════════════
+// ANALYSIS PROMPT (이미지 분석용)
+// ══════════════════════════════════
+const ANALYSIS_PROMPT = `당신은 제품 촬영 전문가입니다. 주어진 제품 이미지를 분석해서 아래 8개 레이어를 JSON 형식으로 정확하게 파악해주세요.
+
+반드시 아래 JSON 형식으로만 응답하세요. 다른 텍스트는 포함하지 마세요.
+
+{
+  "L1": { "value": "앵글/세팅 값", "reasoning": "한 줄 근거" },
+  "L2": { "value": "제품 상태 값", "reasoning": "한 줄 근거" },
+  "L3": { "value": "빛 값", "reasoning": "한 줄 근거" },
+  "L4": { "value": "배경/소재 값", "reasoning": "한 줄 근거" },
+  "L5": { "value": "연출 요소 값", "reasoning": "한 줄 근거" },
+  "L6": { "value": "색/톤 값", "reasoning": "한 줄 근거" },
+  "L7": { "value": "스타일 코드 값", "reasoning": "한 줄 근거" },
+  "L8": { "value": "카메라 세팅 값", "reasoning": "한 줄 근거" },
+  "product_name": "제품 종류 추정 (예: 세럼, 크림, 향수)",
+  "overall_mood": "전체 무드 한 줄 설명",
+  "prompt_ko": "한국어 연출 설명 (1~2문장)",
+  "prompt_en": "영문 프롬프트 (키워드 형태)"
+}
+
+각 레이어별 가이드 (빌더와 호환되도록 아래 옵션에서 가능한 한 그대로 선택):
+L1 앵글: 탑다운 (버즈아이) / 하이앵글 45도 / 아이레벨 / 로우앵글 / 매크로 클로즈업 / 기울임 (더치)
+L2 제품상태: 단독 세움 / 눕힘 / 열린 상태 (뚜껑 오픈) / 군집 / 라인업 / 공중부양 (레비테이션) / 내용물 노출
+L3 빛: 아침 창문빛 / 골든아워 역광 / 오버캐스트 확산광 / 한낮 직사광 / 블루아워 / 소프트박스 탑라이트 / 45도 사이드 소프트박스 / 림라이트 / 스포트 하드 / 백라이트 / 렌즈플레어 / 코스틱 굴절광 / 프리즘 레인보우
+L4 배경: 순백 (Pure White) / 오프화이트/크림 / 그레이 / 딥블랙 / 파스텔 컬러 / 화이트 대리석 / 블랙 대리석 / 콘크리트 / 밝은 원목 / 다크 원목 / 린넨 / 실크/새틴 / 벨벳 / 자연 (숲/이끼/바위) / 욕실 타일 / 창가/창틀 / 카페 테이블 / 수영장/욕조 / 수중 (Underwater)
+L5 연출: 물방울/이슬 / 얼음 결정 / 꽃잎 흩날림 / 생화 배치 / 드라이플라워 / 하드 패턴 섀도우 / 안개/포그 / 파우더 비산 / 거울 반사 / 골드 트레이/소품 / 없음
+L6 색톤: 하이키 (밝고 플랫) / 뉴트럴 (자연) / 로우키 (어둡고 드라마틱) + 웜/쿨/뉴트럴 조합으로 설명
+L7 스타일: 클린 미니멀 / 다크 럭셔리 / 보타니컬 클린 / 워터/수분 / 골든/웜 럭셔리 / 과학/테크 / 빈티지/필름 / 에디토리얼 아방가르드 / 파스텔 소프트 / 라이프스타일 UGC
+L8 카메라: 화각(mm) + 심도(f값) + 샷사이즈(XCU/CU/MCU/MS/FS/WS) 조합으로 설명`;
+
+// ══════════════════════════════════
+// UNIFIED STATE
+// ══════════════════════════════════
+let S = {
+  // Builder state
+  ptype: '전체',
+  grp: '전체',
+  mGrp: '전체',
+  tmpl: null,
+  layers: {L1:null,L2:null,L3:null,L4:null,L5:null,L6:null,L7:null,L8:null},
+  tmplLayers: {},  // 템플릿/분석에서 온 원본값
+  addedKw: [],
+  source: null,  // 'template' | 'image' | null
+
+  // Analyzer state
+  imageBase64: null,
+  imageMime: null,
+  imageName: null,
+  imageDataUrl: null,
+  analysisResult: null,
+
+  // API state
+  currentApi: localStorage.getItem('selectedApi') || 'gemini',
+
+  // Saved filter
+  savedFilter: 'all',
+
+  // Save modal mode
+  saveMode: 'builder',  // 'image' | 'builder'
+
+  // Loaded item id (for editing)
+  loadedItemId: null
+};
+
+// ══════════════════════════════════
+// INIT
+// ══════════════════════════════════
+function init() {
+  loadKeysFromStorage();
+  selectApi(S.currentApi, true);
+  renderTemplates();
+  renderLayerBlocks();
+  updateSummary();
+  updatePrompt();
+  renderSavedList();
+  updateApiStatus();
+
+  document.querySelector('#tb-change-btn').onclick = openPicker;
+}
+
+// ══════════════════════════════════
+// TABS
+// ══════════════════════════════════
+function showTab(id, btn) {
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-'+id).classList.add('active');
+  document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  else document.querySelector(`.tab[data-tab="${id}"]`)?.classList.add('active');
+  if (id === 'saved') renderSavedList();
+}
+
+function showSubtab(id, btn) {
+  document.querySelectorAll('.subtab-content').forEach(t => t.classList.remove('active'));
+  document.getElementById('subtab-content-'+id).classList.add('active');
+  document.querySelectorAll('.subtab').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  else document.getElementById('subtab-'+id)?.classList.add('active');
+}
+
+// ══════════════════════════════════
+// API SETTINGS
+// ══════════════════════════════════
+function selectApi(api, silent) {
+  S.currentApi = api;
+  if (!silent) localStorage.setItem('selectedApi', api);
+  document.querySelectorAll('.api-card').forEach(c => c.classList.remove('selected'));
+  document.getElementById('card-'+api)?.classList.add('selected');
+  updateApiStatus();
+}
+
+function saveKey(api, ev) {
+  const val = document.getElementById('key-'+api).value.trim();
+  if (!val) { showAlert('error', 'API 키를 입력해주세요.'); return; }
+  localStorage.setItem('apikey_'+api, val);
+  const btn = ev.target;
+  btn.textContent = '✓ 저장됨';
+  btn.classList.add('saved');
+  setTimeout(() => { btn.textContent = '저장'; btn.classList.remove('saved'); }, 2000);
+  updateKeyStatus(api, true);
+  selectApi(api);
+  updateApiStatus();
+  showAlert('success', `${api.toUpperCase()} API 키가 저장되었습니다.`);
+}
+
+function loadKeysFromStorage() {
+  ['claude','gpt','gemini'].forEach(api => {
+    const key = localStorage.getItem('apikey_'+api);
+    if (key) {
+      document.getElementById('key-'+api).value = key;
+      updateKeyStatus(api, true);
+    }
+  });
+}
+
+function updateKeyStatus(api, hasKey) {
+  const el = document.getElementById('status-'+api);
+  if (el) {
+    el.textContent = hasKey ? '✓ 키 저장됨' : '키 없음';
+    el.className = 'key-status ' + (hasKey ? 'ok' : 'empty');
+  }
+}
+
+function updateApiStatus() {
+  const key = localStorage.getItem('apikey_'+S.currentApi);
+  const dot = document.getElementById('status-dot');
+  const text = document.getElementById('status-text');
+  const model = document.getElementById('status-model-text');
+  const modelMap = { claude:'claude-sonnet-4-5', gpt:'gpt-4o', gemini:'gemini-1.5-flash' };
+  const nameMap = { claude:'Claude', gpt:'GPT-4o', gemini:'Gemini' };
+  if (key) {
+    dot.className = 'status-dot ok';
+    text.textContent = nameMap[S.currentApi] + ' 연결됨';
+    model.textContent = modelMap[S.currentApi];
+  } else {
+    dot.className = 'status-dot empty';
+    text.textContent = 'API 키를 설정하세요';
+    model.textContent = '-';
+  }
+}
+
+
+// ══════════════════════════════════
+// IMAGE UPLOAD
+// ══════════════════════════════════
+function onDragOver(e) { e.preventDefault(); document.getElementById('upload-zone').classList.add('dragover'); }
+function onDragLeave(e) { document.getElementById('upload-zone').classList.remove('dragover'); }
+function onDrop(e) {
+  e.preventDefault();
+  document.getElementById('upload-zone').classList.remove('dragover');
+  const file = e.dataTransfer.files[0];
+  if (file && file.type.startsWith('image/')) processFile(file);
+}
+function onFileSelect(e) {
+  const file = e.target.files[0];
+  if (file) processFile(file);
+}
+
+function processFile(file) {
+  S.imageName = file.name;
+  S.imageMime = file.type;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    S.imageBase64 = e.target.result.split(',')[1];
+    S.imageDataUrl = e.target.result;
+    const zone = document.getElementById('upload-zone');
+    const img = document.getElementById('preview-img');
+    const overlay = document.getElementById('preview-overlay');
+    const placeholder = document.getElementById('upload-placeholder');
+    img.src = e.target.result;
+    img.style.display = 'block';
+    overlay.style.display = 'flex';
+    placeholder.style.display = 'none';
+    zone.classList.add('has-image');
+    document.getElementById('preview-name').textContent = file.name;
+    document.getElementById('btn-analyze').disabled = false;
+    document.getElementById('analyze-text').textContent = 'AI로 레이어 분석 시작';
+  };
+  reader.readAsDataURL(file);
+}
+
+function clearImage(e) {
+  if (e) e.stopPropagation();
+  S.imageBase64 = null;
+  S.imageMime = null;
+  S.imageName = null;
+  S.imageDataUrl = null;
+  const zone = document.getElementById('upload-zone');
+  document.getElementById('preview-img').style.display = 'none';
+  document.getElementById('preview-overlay').style.display = 'none';
+  document.getElementById('upload-placeholder').style.display = 'block';
+  zone.classList.remove('has-image');
+  document.getElementById('btn-analyze').disabled = true;
+  document.getElementById('analyze-text').textContent = '이미지를 업로드하면 분석 시작';
+  document.getElementById('file-input').value = '';
+}
+
+// ══════════════════════════════════
+// IMAGE ANALYSIS
+// ══════════════════════════════════
+async function analyzeImage() {
+  const key = localStorage.getItem('apikey_'+S.currentApi);
+  if (!key) {
+    showAlert('error', 'API 키를 먼저 설정해주세요. ⚙️ API 탭으로 이동합니다.');
+    showTab('settings');
+    return;
+  }
+  if (!S.imageBase64) { showAlert('error', '이미지를 먼저 업로드해주세요.'); return; }
+
+  setAnalyzeLoading(true);
+  hideAlert();
+
+  try {
+    let result;
+    if (S.currentApi === 'claude') result = await callClaude(key);
+    else if (S.currentApi === 'gpt') result = await callGPT(key);
+    else result = await callGemini(key);
+
+    S.analysisResult = result;
+    renderResult(result);
+    showAlert('success', `✓ 분석 완료! ${result.product_name || '제품'} 이미지의 레이어가 자동 파싱되었습니다. "✦ 빌더에서 편집하기" 버튼으로 빌더에서 수정할 수 있어요.`);
+    document.getElementById('btn-bridge').disabled = false;
+    document.getElementById('btn-save-from-analyze').disabled = false;
+  } catch (err) {
+    showAlert('error', '분석 실패: ' + err.message);
+    console.error(err);
+  }
+  setAnalyzeLoading(false);
+}
+
+async function callClaude(key) {
+  const response = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': key,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true'
+    },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-5',
+      max_tokens: 1500,
+      messages: [{
+        role: 'user',
+        content: [
+          { type: 'image', source: { type: 'base64', media_type: S.imageMime, data: S.imageBase64 } },
+          { type: 'text', text: ANALYSIS_PROMPT }
+        ]
+      }]
+    })
+  });
+  if (!response.ok) {
+    const err = await response.json();
+    throw new Error(err.error?.message || `HTTP ${response.status}`);
+  }
+  const data = await response.json();
+  return parseJSON(data.content[0].text);
+}
+
+async function callGPT(key) {
+  const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ' + key
+    },
+    body: JSON.stringify({
+      model: 'gpt-4o',
+      max_tokens: 1500,
+      messages: [{
+        role: 'user',
+        content: [
+          { type: 'image_url', image_url: { url: `data:${S.imageMime};base64,${S.imageBase64}` } },
+          { type: 'text', text: ANALYSIS_PROMPT }
+        ]
+      }]
+    })
+  });
+  if (!response.ok) {
+    const err = await response.json();
+    throw new Error(err.error?.message || `HTTP ${response.status}`);
+  }
+  const data = await response.json();
+  return parseJSON(data.choices[0].message.content);
+}
+
+async function callGemini(key) {
+  const response = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{
+          parts: [
+            { inline_data: { mime_type: S.imageMime, data: S.imageBase64 } },
+            { text: ANALYSIS_PROMPT }
+          ]
+        }],
+        generationConfig: { maxOutputTokens: 1500 }
+      })
+    }
+  );
+  if (!response.ok) {
+    const err = await response.json();
+    throw new Error(err.error?.message || `HTTP ${response.status}`);
+  }
+  const data = await response.json();
+  return parseJSON(data.candidates[0].content.parts[0].text);
+}
+
+function parseJSON(text) {
+  const clean = text.replace(/```json|```/g, '').trim();
+  try { return JSON.parse(clean); }
+  catch (e) {
+    const match = clean.match(/\{[\s\S]*\}/);
+    if (match) return JSON.parse(match[0]);
+    throw new Error('AI 응답을 파싱할 수 없습니다. 다시 시도해주세요.');
+  }
+}
+
+// ══════════════════════════════════
+// RENDER ANALYSIS RESULT
+// ══════════════════════════════════
+function renderResult(r) {
+  document.getElementById('result-section').style.display = 'block';
+  const layers = [
+    {id:'L1', name:'앵글/세팅'},
+    {id:'L2', name:'제품 상태'},
+    {id:'L3', name:'빛'},
+    {id:'L4', name:'배경/소재'},
+    {id:'L5', name:'연출 요소'},
+    {id:'L6', name:'색/톤'},
+    {id:'L7', name:'스타일 코드'},
+    {id:'L8', name:'카메라 세팅'}
+  ];
+
+  document.getElementById('result-blocks').innerHTML = layers.map(l => {
+    const data = r[l.id];
+    if (!data) return '';
+    return `
+      <div class="result-block filled">
+        <div class="rb-hd">
+          <span class="rb-badge">${l.id}</span>
+          <span class="rb-name">${l.name}</span>
+        </div>
+        <div class="rb-val editable" contenteditable="true"
+             id="rbv-${l.id}"
+             onblur="onAnalysisLayerEdit('${l.id}', this.textContent)">${escapeHtml(data.value || '-')}</div>
+        <div class="rb-reasoning">${escapeHtml(data.reasoning || '')}</div>
+      </div>
+    `;
+  }).join('');
+
+  // 우측 패널 미리보기 + 빌더 상태에도 반영 (분석 결과를 라이브로 보여줌)
+  syncRightPanelFromAnalysis(r);
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+}
+
+function onAnalysisLayerEdit(layerId, newVal) {
+  if (S.analysisResult && S.analysisResult[layerId]) {
+    S.analysisResult[layerId].value = newVal.trim();
+    syncRightPanelFromAnalysis(S.analysisResult);
+  }
+}
+
+function syncRightPanelFromAnalysis(r) {
+  // 우측 패널 레이어 표시
+  ['L1','L2','L3','L4','L5','L6','L7','L8'].forEach((lid, i) => {
+    const idx = i + 1;
+    const lm = document.getElementById('lm-'+idx);
+    const dot = document.getElementById('dot-'+idx);
+    if (lm && r[lid]) {
+      const val = r[lid].value || '-';
+      if (lid === 'L8') {
+        lm.innerHTML = val + ' <span style="font-size:9px;color:var(--gold)">선택</span>';
+      } else {
+        lm.textContent = val;
+      }
+      lm.className = 'lm-v ai';
+      if (dot) dot.className = 'lm-dot set';
+    }
+  });
+
+  // 우측 프롬프트
+  document.getElementById('prompt-ko').textContent = r.prompt_ko || '-';
+  document.getElementById('prompt-en').textContent = r.prompt_en || '-';
+  document.getElementById('prompt-extra').style.display = 'none';
+
+  // 출처 태그
+  document.getElementById('layer-source-tag').textContent = '· 📷 이미지 분석';
+}
+
+
+// ══════════════════════════════════
+// BRIDGE: 분석 → 빌더
+// ══════════════════════════════════
+function bridgeToBuilder() {
+  if (!S.analysisResult) {
+    showAlert('error', '먼저 이미지를 분석해주세요.');
+    return;
+  }
+  const r = S.analysisResult;
+
+  // 분석 결과의 8개 레이어를 빌더 상태로 복사
+  // 분석에서 온 것은 "기준값"으로 표시 (수정하면 modified로 바뀜)
+  const newLayers = {};
+  ['L1','L2','L3','L4','L5','L6','L7','L8'].forEach(lid => {
+    if (r[lid] && r[lid].value) newLayers[lid] = r[lid].value;
+  });
+
+  S.layers = {...newLayers};
+  S.tmplLayers = {...newLayers};
+  S.tmpl = null;
+  S.source = 'image';
+  S.addedKw = [];
+
+  // 배너를 이미지 출처로 변경
+  const banner = document.getElementById('tmpl-banner');
+  banner.classList.remove('empty');
+  banner.classList.add('from-image');
+  const icon = banner.querySelector('.tb-icon');
+  icon.classList.remove('empty');
+  icon.classList.add('from-image-thumb');
+  if (S.imageDataUrl) {
+    icon.innerHTML = `<img src="${S.imageDataUrl}" alt="">`;
+  } else {
+    icon.classList.remove('from-image-thumb');
+    icon.classList.add('from-image');
+    icon.textContent = '📷';
+  }
+  document.getElementById('tb-name').textContent = '📷 이미지 분석 결과 · ' + (r.product_name || '제품');
+  document.getElementById('tb-def').textContent = r.overall_mood || '아래 레이어를 자유롭게 조정하세요';
+
+  // 레이어 블록 렌더 + 우측 패널 업데이트
+  renderLayerBlocks();
+  updateSummary();
+
+  // product info 자동 채우기
+  if (r.product_name) document.getElementById('pi-name').value = r.product_name;
+  document.querySelectorAll('.extra-kw').forEach(e => e.classList.remove('added'));
+
+  updatePrompt();
+
+  // 빌더 탭 + 커스텀 서브탭으로 이동
+  showTab('builder');
+  showSubtab('custom');
+
+  showAlert('success', '✓ 분석 결과를 빌더로 가져왔어요. 레이어를 자유롭게 수정하세요.');
+}
+
+// ══════════════════════════════════
+// BUILDER: TEMPLATE FILTER & RENDER
+// ══════════════════════════════════
+function setPType(v, el) {
+  S.ptype = v;
+  document.querySelectorAll('#pt-chips .chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  renderTemplates();
+}
+function setGrp(v, el) {
+  S.grp = v;
+  document.querySelectorAll('#grp-chips .chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  renderTemplates();
+}
+
+function renderTemplates() {
+  let list = TEMPLATES;
+  if (S.ptype !== '전체') list = list.filter(t => t.product.includes(S.ptype));
+  if (S.grp !== '전체') list = list.filter(t => t.group === S.grp);
+  document.getElementById('tmpl-grid').innerHTML = list.map(t => `
+    <div class="tc ${S.tmpl?.id === t.id ? 'selected' : ''}" onclick="selectTemplate('${t.id}')">
+      <div class="tc-bar ${t.gc}"></div>
+      <div class="tc-num">${t.id}</div>
+      <div class="tc-name">${t.name}</div>
+      <div class="tc-def">${t.def}</div>
+      <div class="tc-mini">
+        <span class="tc-tag">${t.layers.L3.split(' ')[0]}</span>
+        <span class="tc-tag">${t.layers.L4.split(' ')[0]}</span>
+        <span class="tc-tag">${t.layers.L7}</span>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ══════════════════════════════════
+// SELECT TEMPLATE
+// ══════════════════════════════════
+function selectTemplate(id) {
+  const t = TEMPLATES.find(x => x.id === id);
+  if (!t) return;
+  S.tmpl = t;
+  S.layers = {...t.layers};
+  S.tmplLayers = {...t.layers};
+  S.source = 'template';
+
+  // 배너 업데이트
+  const banner = document.getElementById('tmpl-banner');
+  banner.classList.remove('empty', 'from-image');
+  const icon = banner.querySelector('.tb-icon');
+  icon.classList.remove('empty', 'from-image', 'from-image-thumb');
+  icon.innerHTML = '✦';
+  document.getElementById('tb-name').textContent = `${t.id} · ${t.name}`;
+  document.getElementById('tb-def').textContent = t.def;
+
+  syncLayerBlocks();
+  updateSummary();
+  updatePrompt();
+  renderTemplates();
+
+  // 빌더 탭 + 커스텀 서브탭으로 이동
+  showTab('builder');
+  showSubtab('custom');
+}
+
+// ══════════════════════════════════
+// LAYER BLOCKS (빌더 커스텀)
+// ══════════════════════════════════
+function renderLayerBlocks() {
+  const c = document.getElementById('layer-blocks');
+  c.innerHTML = LAYER_DEFS.map(ld => {
+    const cur = S.layers[ld.id];
+    const fromTmpl = S.tmplLayers[ld.id];
+    const isModified = cur && fromTmpl && cur !== fromTmpl;
+    const badgeClass = isModified ? 'modified' : (fromTmpl ? 'from-tmpl' : '');
+    const curClass = isModified ? 'modified' : (cur ? 'set' : '');
+
+    let optsHtml = '';
+    if (ld.subs) {
+      optsHtml = ld.subs.map(sg => `
+        <div class="sg-label">${sg.label}</div>
+        ${sg.opts.map(o => optBtn(ld.id, o, cur, fromTmpl)).join('')}
+      `).join('');
+    } else {
+      optsHtml = ld.opts.map(o => optBtn(ld.id, o, cur, fromTmpl)).join('');
+    }
+
+    const curDisplay = cur ? (cur.length > 18 ? cur.slice(0, 16) + '…' : cur) : '미선택';
+
+    return `
+      <div class="layer-blk ${cur ? 'has-value' : ''} ${isModified ? 'modified' : ''}" id="blk-${ld.id}">
+        <div class="lb-hd">
+          <span class="lb-badge ${badgeClass}">${ld.id}</span>
+          <span class="lb-title">${ld.name}${ld.optional ? ` <span style="font-size:9px;font-weight:400;color:var(--gold)">선택</span>` : ''}</span>
+          <span class="lb-cur ${curClass}" id="lcur-${ld.id}">${curDisplay}</span>
+        </div>
+        <div class="lb-opts" id="lopts-${ld.id}">${optsHtml}</div>
+      </div>
+    `;
+  }).join('');
+}
+
+function optBtn(lid, o, cur, fromTmpl) {
+  const isActive = cur === o;
+  const isFromTmpl = fromTmpl === o;
+  const cls = isActive
+    ? (isFromTmpl ? 'lopt active from-tmpl' : 'lopt active')
+    : (isFromTmpl ? 'lopt from-tmpl' : 'lopt');
+  return `<div class="${cls}" data-lid="${lid}" data-val="${o}" onclick="pickLayer('${lid}','${o.replace(/'/g, "\\'")}',this)">${o}</div>`;
+}
+
+function pickLayer(lid, val) {
+  S.layers[lid] = val;
+
+  const fromTmpl = S.tmplLayers[lid];
+  const isModified = val && fromTmpl && val !== fromTmpl;
+
+  document.querySelectorAll(`[data-lid="${lid}"]`).forEach(e => {
+    const isA = e.dataset.val === val;
+    const isFT = fromTmpl === e.dataset.val;
+    e.className = isA ? (isFT ? 'lopt active from-tmpl' : 'lopt active') : (isFT ? 'lopt from-tmpl' : 'lopt');
+  });
+
+  const curEl = document.getElementById('lcur-'+lid);
+  if (curEl) {
+    curEl.textContent = val.length > 18 ? val.slice(0, 16) + '…' : val;
+    curEl.className = 'lb-cur ' + (isModified ? 'modified' : 'set');
+  }
+
+  const blk = document.getElementById('blk-'+lid);
+  if (blk) {
+    blk.classList.add('has-value');
+    if (isModified) blk.classList.add('modified');
+    else blk.classList.remove('modified');
+  }
+
+  updateSummary();
+  updatePrompt();
+}
+
+function syncLayerBlocks() { renderLayerBlocks(); }
+
+// ══════════════════════════════════
+// SUMMARY (right panel)
+// ══════════════════════════════════
+function updateSummary() {
+  LAYER_DEFS.forEach((ld, i) => {
+    const idx = i + 1;
+    const val = S.layers[ld.id];
+    const fromTmpl = S.tmplLayers[ld.id];
+    const isModified = val && fromTmpl && val !== fromTmpl;
+    const el = document.getElementById('lm-'+idx);
+    const dot = document.getElementById('dot-'+idx);
+    if (el) {
+      if (ld.id === 'L8') {
+        el.innerHTML = val
+          ? `${val.split(' ')[0]} <span style="font-size:9px;color:var(--gold)">선택</span>`
+          : `카메라 <span style="font-size:9px;color:var(--gold)">선택</span>`;
+      } else {
+        el.textContent = val || ld.name;
+      }
+      el.className = 'lm-v ' + (val ? (isModified ? 'modified' : 'set') : '');
+    }
+    if (dot) {
+      dot.className = 'lm-dot ' + (val ? (isModified ? 'modified' : 'set') : 'empty');
+    }
+  });
+
+  // 출처 태그
+  const tag = document.getElementById('layer-source-tag');
+  if (S.source === 'image') tag.textContent = '· 📷 이미지 분석';
+  else if (S.source === 'template' && S.tmpl) tag.textContent = `· 📋 ${S.tmpl.name}`;
+  else tag.textContent = '';
+}
+
+// ══════════════════════════════════
+// PROMPT (unified for builder)
+// ══════════════════════════════════
+function updatePrompt() {
+  const L = S.layers;
+  const pi_name = document.getElementById('pi-name')?.value.trim() || '';
+  const pi_feat = document.getElementById('pi-feature')?.value.trim() || '';
+  const pi_mood = document.getElementById('pi-mood')?.value.trim() || '';
+  const pi_extra = document.getElementById('pi-extra')?.value.trim() || '';
+
+  // 한국어
+  const koParts = [];
+  if (pi_name) koParts.push(`제품: ${pi_name}`);
+  if (L.L4) koParts.push(L.L4 + ' 배경');
+  if (L.L2) koParts.push(L.L2);
+  if (L.L1) koParts.push(L.L1);
+  if (L.L3) koParts.push(L.L3 + ' 조명');
+  if (L.L5 && L.L5 !== '없음') koParts.push(L.L5 + ' 연출');
+  if (L.L6) koParts.push(L.L6);
+  if (L.L7) koParts.push(L.L7);
+  if (L.L8) koParts.push((L.L8.split(' ')[0] || '') + ' ' + (L.L8.split(' ')[1] || ''));
+  if (pi_feat) koParts.push(pi_feat);
+  if (pi_mood) koParts.push(`타겟: ${pi_mood}`);
+
+  // 영문
+  const enParts = [];
+  if (pi_name) enParts.push(pi_name);
+  if (L.L4) enParts.push(EN_MAP.L4[L.L4] || L.L4);
+  if (L.L2) enParts.push(EN_MAP.L2[L.L2] || L.L2);
+  if (L.L1) enParts.push(EN_MAP.L1[L.L1] || L.L1);
+  if (L.L3) enParts.push(EN_MAP.L3[L.L3] || L.L3);
+  if (L.L5 && L.L5 !== '없음') enParts.push(EN_MAP.L5[L.L5] || L.L5);
+  if (L.L6) enParts.push(EN_MAP.L6[L.L6] || L.L6);
+  if (L.L7) enParts.push(EN_MAP.L7[L.L7] || L.L7);
+  if (L.L8) enParts.push(EN_MAP.L8[L.L8] || L.L8);
+  if (pi_feat) enParts.push(pi_feat);
+  enParts.push('professional product photography, high resolution, no watermark');
+
+  // extra
+  const extraParts = [];
+  if (S.addedKw.length) extraParts.push(...S.addedKw);
+  if (pi_extra) extraParts.push(pi_extra);
+
+  // 빌더에 레이어가 하나라도 있으면 빌더 결과 표시 (분석 결과를 덮어씀)
+  const hasAnyLayer = Object.values(L).some(v => v);
+  if (hasAnyLayer) {
+    document.getElementById('prompt-ko').textContent =
+      koParts.length ? koParts.join(', ') : '레이어를 선택하거나 템플릿을 골라주세요.';
+    document.getElementById('prompt-en').textContent =
+      enParts.filter(Boolean).join(', ');
+
+    const extraEl = document.getElementById('prompt-extra');
+    if (extraParts.length) {
+      extraEl.style.display = 'block';
+      extraEl.textContent = '+ ' + extraParts.join(', ');
+    } else {
+      extraEl.style.display = 'none';
+    }
+  }
+}
+
+// QUICK KEYWORDS
+function addKw(el, kw) {
+  if (el.classList.contains('added')) {
+    el.classList.remove('added');
+    S.addedKw = S.addedKw.filter(k => k !== kw);
+  } else {
+    el.classList.add('added');
+    S.addedKw.push(kw);
+  }
+  updatePrompt();
+}
+
+
+// ══════════════════════════════════
+// SAVE / LOAD UNIFIED
+// ══════════════════════════════════
+function openSaveModal(mode) {
+  S.saveMode = mode;
+  let defaultName = '';
+  let defaultMemo = '';
+
+  if (mode === 'image' && S.analysisResult) {
+    defaultName = S.analysisResult.product_name || S.imageName?.replace(/\.[^.]+$/, '') || '';
+  } else if (mode === 'builder') {
+    const piName = document.getElementById('pi-name')?.value.trim();
+    if (piName) defaultName = piName;
+    else if (S.tmpl) defaultName = S.tmpl.name;
+    else if (S.source === 'image' && S.analysisResult) defaultName = S.analysisResult.product_name || '';
+  }
+
+  document.getElementById('save-name').value = defaultName;
+  document.getElementById('save-memo').value = defaultMemo;
+  document.getElementById('save-overlay').classList.add('open');
+  setTimeout(() => document.getElementById('save-name').focus(), 100);
+}
+
+function closeSaveModal(e) {
+  if (!e || e.target === document.getElementById('save-overlay') || !e.currentTarget) {
+    document.getElementById('save-overlay').classList.remove('open');
+  }
+}
+
+function saveTemplate() {
+  const name = document.getElementById('save-name').value.trim();
+  if (!name) { document.getElementById('save-name').focus(); return; }
+  const memo = document.getElementById('save-memo').value.trim();
+
+  const templates = JSON.parse(localStorage.getItem('saved_templates') || '[]');
+
+  let newItem;
+
+  if (S.saveMode === 'image') {
+    // 이미지 분석 결과 저장
+    const r = S.analysisResult;
+    if (!r) { showAlert('error', '분석 결과가 없습니다.'); return; }
+    const layers = {};
+    ['L1','L2','L3','L4','L5','L6','L7','L8'].forEach(lid => {
+      if (r[lid]) layers[lid] = r[lid].value || '';
+    });
+    newItem = {
+      id: Date.now().toString(),
+      name, memo,
+      date: new Date().toLocaleDateString('ko-KR'),
+      source: 'image',
+      imageDataUrl: S.imageDataUrl,
+      analysis: r,
+      layers,
+      productInfo: { name:'', feature:'', mood:'', extraKw:[] },
+      prompt_ko: r.prompt_ko || '',
+      prompt_en: r.prompt_en || ''
+    };
+  } else {
+    // 빌더 결과 저장
+    const productInfo = {
+      name: document.getElementById('pi-name')?.value.trim() || '',
+      feature: document.getElementById('pi-feature')?.value.trim() || '',
+      mood: document.getElementById('pi-mood')?.value.trim() || '',
+      extraKw: [...S.addedKw]
+    };
+    newItem = {
+      id: Date.now().toString(),
+      name, memo,
+      date: new Date().toLocaleDateString('ko-KR'),
+      source: 'builder',
+      imageDataUrl: (S.source === 'image' ? S.imageDataUrl : null),
+      analysis: (S.source === 'image' ? S.analysisResult : null),
+      layers: {...S.layers},
+      tmplLayers: {...S.tmplLayers},
+      tmplId: S.tmpl?.id || null,
+      builderSource: S.source,
+      productInfo,
+      prompt_ko: document.getElementById('prompt-ko').textContent,
+      prompt_en: document.getElementById('prompt-en').textContent
+    };
+  }
+
+  templates.unshift(newItem);
+  localStorage.setItem('saved_templates', JSON.stringify(templates));
+  closeSaveModal();
+  showAlert('success', `"${name}" 라이브러리에 저장되었습니다. 📁 저장됨 탭에서 확인하세요.`);
+  renderSavedList();
+}
+
+// ══════════════════════════════════
+// SAVED LIST
+// ══════════════════════════════════
+function setSavedFilter(v, el) {
+  S.savedFilter = v;
+  document.querySelectorAll('#saved-filter .chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  renderSavedList();
+}
+
+// 구버전(ProductAnalyzer v1 단독)으로 저장된 항목과 호환
+function migrateSavedItem(t) {
+  if (!t.source) {
+    // 옛 포맷: analysis가 있고 imageDataUrl이 있으면 이미지 분석본으로 간주
+    if (t.analysis || t.imageDataUrl) t.source = 'image';
+    else t.source = 'builder';
+  }
+  if (!t.productInfo) t.productInfo = { name:'', feature:'', mood:'', extraKw:[] };
+  return t;
+}
+
+function loadAllSaved() {
+  const arr = JSON.parse(localStorage.getItem('saved_templates') || '[]');
+  return arr.map(migrateSavedItem);
+}
+
+function renderSavedList() {
+  const allTemplates = loadAllSaved();
+  const templates = S.savedFilter === 'all'
+    ? allTemplates
+    : allTemplates.filter(t => t.source === S.savedFilter);
+
+  const el = document.getElementById('saved-list');
+  const cnt = document.getElementById('saved-count');
+  cnt.textContent = `${templates.length}개${S.savedFilter !== 'all' ? ' / 전체 ' + allTemplates.length : ''}`;
+
+  if (!templates.length) {
+    el.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">📭</div>
+        <div class="empty-text">저장된 항목이 없습니다<br>
+        ${S.savedFilter === 'all' ? '이미지 분석이나 빌더에서 저장해보세요' : '이 카테고리에는 저장된 것이 없습니다'}</div>
+      </div>`;
+    return;
+  }
+
+  el.innerHTML = templates.map(t => {
+    const sourceLabel = t.source === 'image' ? '📷 이미지' : '🎨 빌더';
+    const sourceCls = t.source === 'image' ? 'image' : 'builder';
+    const tagsHtml = [
+      t.layers?.L7 && `<span class="saved-tag">${t.layers.L7}</span>`,
+      t.layers?.L3 && `<span class="saved-tag">${t.layers.L3.split(' ')[0]}</span>`,
+      t.layers?.L4 && `<span class="saved-tag">${t.layers.L4.split(' ')[0]}</span>`,
+      t.productInfo?.name && `<span class="saved-tag" style="background:var(--blue-light);color:var(--blue)">${t.productInfo.name.slice(0,12)}</span>`
+    ].filter(Boolean).join('');
+
+    return `
+      <div class="saved-item">
+        ${t.imageDataUrl
+          ? `<img class="saved-thumb" src="${t.imageDataUrl}" alt="">`
+          : `<div class="saved-thumb-placeholder">${t.source === 'image' ? '📷' : '🎨'}</div>`}
+        <div class="saved-info">
+          <div class="saved-source-row">
+            <span class="saved-source ${sourceCls}">${sourceLabel}</span>
+            <span class="saved-name">${escapeHtml(t.name)}</span>
+          </div>
+          <div class="saved-date">${t.date}${t.memo ? ' · ' + escapeHtml(t.memo) : ''}</div>
+          <div class="saved-tags">${tagsHtml}</div>
+        </div>
+        <div class="saved-btns">
+          ${t.source === 'image'
+            ? `<button class="btn-load" onclick="loadToAnalyze('${t.id}')">분석으로</button>`
+            : ''}
+          <button class="btn-load gold" onclick="loadToBuilder('${t.id}')">빌더로 편집</button>
+          <button class="btn-del" onclick="deleteTemplate('${t.id}')">삭제</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function loadToAnalyze(id) {
+  const templates = loadAllSaved();
+  const t = templates.find(x => x.id === id);
+  if (!t) return;
+
+  S.analysisResult = t.analysis;
+  S.loadedItemId = id;
+
+  if (t.imageDataUrl) {
+    const b64 = t.imageDataUrl.split(',')[1];
+    const mime = t.imageDataUrl.split(';')[0].replace('data:', '');
+    S.imageBase64 = b64;
+    S.imageMime = mime;
+    S.imageName = t.name;
+    S.imageDataUrl = t.imageDataUrl;
+    const img = document.getElementById('preview-img');
+    img.src = t.imageDataUrl;
+    img.style.display = 'block';
+    document.getElementById('preview-overlay').style.display = 'flex';
+    document.getElementById('upload-placeholder').style.display = 'none';
+    document.getElementById('upload-zone').classList.add('has-image');
+    document.getElementById('preview-name').textContent = t.name;
+    document.getElementById('btn-analyze').disabled = false;
+    document.getElementById('analyze-text').textContent = '다시 분석하기';
+  }
+
+  if (t.analysis) {
+    renderResult(t.analysis);
+    document.getElementById('btn-bridge').disabled = false;
+    document.getElementById('btn-save-from-analyze').disabled = false;
+  }
+
+  showTab('analyze');
+  showAlert('success', `"${t.name}" 분석 결과를 불러왔습니다.`);
+}
+
+function loadToBuilder(id) {
+  const templates = loadAllSaved();
+  const t = templates.find(x => x.id === id);
+  if (!t) return;
+
+  S.loadedItemId = id;
+  S.layers = {...(t.layers || {})};
+
+  // 기준값(tmplLayers) 설정
+  if (t.source === 'image') {
+    S.tmplLayers = {...(t.layers || {})};
+    S.source = 'image';
+    S.tmpl = null;
+
+    // 이미지 정보 복원
+    if (t.imageDataUrl) {
+      S.imageDataUrl = t.imageDataUrl;
+      S.imageBase64 = t.imageDataUrl.split(',')[1];
+      S.imageMime = t.imageDataUrl.split(';')[0].replace('data:','');
+      S.imageName = t.name;
+      S.analysisResult = t.analysis;
+    }
+
+    // 배너
+    const banner = document.getElementById('tmpl-banner');
+    banner.classList.remove('empty');
+    banner.classList.add('from-image');
+    const icon = banner.querySelector('.tb-icon');
+    icon.classList.remove('empty', 'from-image');
+    icon.classList.add('from-image-thumb');
+    if (t.imageDataUrl) icon.innerHTML = `<img src="${t.imageDataUrl}" alt="">`;
+    else { icon.classList.remove('from-image-thumb'); icon.classList.add('from-image'); icon.textContent = '📷'; }
+    document.getElementById('tb-name').textContent = '📷 ' + t.name;
+    document.getElementById('tb-def').textContent = (t.analysis?.overall_mood) || (t.memo || '이미지 분석 기반 — 자유롭게 수정하세요');
+  } else {
+    // builder source
+    S.tmplLayers = t.tmplLayers ? {...t.tmplLayers} : {...(t.layers || {})};
+    S.tmpl = t.tmplId ? TEMPLATES.find(x => x.id === t.tmplId) : null;
+    S.source = t.builderSource || (t.tmplId ? 'template' : null);
+
+    if (t.imageDataUrl) {
+      S.imageDataUrl = t.imageDataUrl;
+      S.imageBase64 = t.imageDataUrl.split(',')[1];
+      S.imageMime = t.imageDataUrl.split(';')[0].replace('data:','');
+      S.imageName = t.name;
+      S.analysisResult = t.analysis;
+    }
+
+    const banner = document.getElementById('tmpl-banner');
+    const icon = banner.querySelector('.tb-icon');
+    if (S.source === 'image' && t.imageDataUrl) {
+      banner.classList.remove('empty');
+      banner.classList.add('from-image');
+      icon.classList.remove('empty', 'from-image');
+      icon.classList.add('from-image-thumb');
+      icon.innerHTML = `<img src="${t.imageDataUrl}" alt="">`;
+      document.getElementById('tb-name').textContent = '📷 ' + t.name;
+      document.getElementById('tb-def').textContent = t.memo || '이미지 분석 기반 빌더';
+    } else if (S.tmpl) {
+      banner.classList.remove('empty', 'from-image');
+      icon.classList.remove('empty', 'from-image', 'from-image-thumb');
+      icon.innerHTML = '✦';
+      document.getElementById('tb-name').textContent = `${S.tmpl.id} · ${S.tmpl.name}`;
+      document.getElementById('tb-def').textContent = S.tmpl.def;
+    } else {
+      banner.classList.remove('empty', 'from-image');
+      icon.classList.remove('empty', 'from-image', 'from-image-thumb');
+      icon.innerHTML = '🎨';
+      document.getElementById('tb-name').textContent = '🎨 ' + t.name;
+      document.getElementById('tb-def').textContent = t.memo || '빌더 직접 조합';
+    }
+  }
+
+  // product info 복원
+  if (t.productInfo) {
+    document.getElementById('pi-name').value = t.productInfo.name || '';
+    document.getElementById('pi-feature').value = t.productInfo.feature || '';
+    document.getElementById('pi-mood').value = t.productInfo.mood || '';
+    S.addedKw = [...(t.productInfo.extraKw || [])];
+  } else {
+    document.getElementById('pi-name').value = '';
+    document.getElementById('pi-feature').value = '';
+    document.getElementById('pi-mood').value = '';
+    S.addedKw = [];
+  }
+
+  // quick-kw 활성화 상태 복원
+  document.querySelectorAll('.extra-kw').forEach(e => {
+    const kw = e.getAttribute('onclick').match(/'([^']+)'\)$/)?.[1];
+    if (kw && S.addedKw.includes(kw)) e.classList.add('added');
+    else e.classList.remove('added');
+  });
+
+  renderLayerBlocks();
+  updateSummary();
+  updatePrompt();
+
+  showTab('builder');
+  showSubtab('custom');
+  showAlert('success', `"${t.name}" 빌더로 불러왔습니다. 자유롭게 수정 후 다시 저장하세요.`);
+}
+
+function deleteTemplate(id) {
+  let templates = JSON.parse(localStorage.getItem('saved_templates') || '[]');
+  const t = templates.find(x => x.id === id);
+  if (!confirm(`"${t?.name}" 항목을 삭제할까요?`)) return;
+  templates = templates.filter(x => x.id !== id);
+  localStorage.setItem('saved_templates', JSON.stringify(templates));
+  renderSavedList();
+}
+
+
+// ══════════════════════════════════
+// MODAL: TEMPLATE PICKER (from custom subtab)
+// ══════════════════════════════════
+function modalFilter(v, el) {
+  S.mGrp = v;
+  document.querySelectorAll('#modal-filter .chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  renderModal();
+}
+
+function renderModal() {
+  let list = TEMPLATES;
+  if (S.mGrp !== '전체') list = list.filter(t => t.group === S.mGrp);
+  document.getElementById('modal-grid').innerHTML = list.map(t => `
+    <div class="mc ${S.tmpl?.id === t.id ? 'selected' : ''}" onclick="selectTemplate('${t.id}'); closePicker();">
+      <div class="mc-bar ${t.gc}"></div>
+      <div class="mc-num">${t.id}</div>
+      <div class="mc-name">${t.name}</div>
+      <div class="mc-def">${t.def}</div>
+    </div>
+  `).join('');
+}
+
+function openPicker() {
+  renderModal();
+  document.getElementById('picker-overlay').classList.add('open');
+}
+
+function closePicker(e) {
+  if (!e || e.target === document.getElementById('picker-overlay') || e.target.classList.contains('modal-x') || !e.currentTarget) {
+    document.getElementById('picker-overlay').classList.remove('open');
+  }
+}
+
+// ══════════════════════════════════
+// COPY / RANDOM / RESET
+// ══════════════════════════════════
+function copyPrompt() {
+  const ko = document.getElementById('prompt-ko').textContent;
+  const en = document.getElementById('prompt-en').textContent;
+  const extra = document.getElementById('prompt-extra').textContent;
+  const full = [ko, en, extra].filter(x => x && !x.startsWith('이미지') && !x.startsWith('Upload') && !x.startsWith('레이어')).join('\n\n');
+  if (!full.trim()) {
+    showAlert('error', '복사할 프롬프트가 없습니다.');
+    return;
+  }
+  navigator.clipboard.writeText(full).then(() => {
+    const btn = document.getElementById('btn-copy');
+    btn.textContent = '✓ 복사됨!';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = '프롬프트 복사'; btn.classList.remove('copied'); }, 2000);
+  });
+}
+
+function randomPick() {
+  const t = TEMPLATES[Math.floor(Math.random() * TEMPLATES.length)];
+  selectTemplate(t.id);
+}
+
+function resetBuilder() {
+  S.tmpl = null;
+  S.layers = {L1:null,L2:null,L3:null,L4:null,L5:null,L6:null,L7:null,L8:null};
+  S.tmplLayers = {};
+  S.addedKw = [];
+  S.source = null;
+  S.loadedItemId = null;
+
+  const banner = document.getElementById('tmpl-banner');
+  banner.classList.add('empty');
+  banner.classList.remove('from-image');
+  const icon = banner.querySelector('.tb-icon');
+  icon.classList.add('empty');
+  icon.classList.remove('from-image', 'from-image-thumb');
+  icon.innerHTML = '📦';
+  document.getElementById('tb-name').textContent = '기준 없음';
+  document.getElementById('tb-def').textContent = '템플릿 탭에서 선택하거나, 분석 결과를 가져오거나, 아래 레이어를 직접 조합하세요';
+  document.getElementById('pi-name').value = '';
+  document.getElementById('pi-feature').value = '';
+  document.getElementById('pi-mood').value = '';
+  document.getElementById('pi-extra').value = '';
+  document.querySelectorAll('.extra-kw').forEach(e => e.classList.remove('added'));
+
+  renderLayerBlocks();
+  updateSummary();
+  updatePrompt();
+  renderTemplates();
+  showAlert('info', '빌더가 초기화되었습니다.');
+}
+
+function resetAll() {
+  if (!confirm('현재 작업 중인 분석/빌더 내용을 모두 초기화할까요? (저장된 라이브러리는 유지됩니다)')) return;
+  // 분석 초기화
+  clearImage();
+  S.analysisResult = null;
+  document.getElementById('result-section').style.display = 'none';
+  document.getElementById('result-blocks').innerHTML = '';
+  document.getElementById('btn-bridge').disabled = true;
+  document.getElementById('btn-save-from-analyze').disabled = true;
+
+  // 빌더 초기화
+  resetBuilder();
+
+  // 우측 패널 초기 메시지
+  document.getElementById('prompt-ko').textContent = '이미지를 분석하거나 레이어를 조합하면 생성됩니다.';
+  document.getElementById('prompt-en').textContent = 'Upload, analyze, or combine layers to generate prompt...';
+  document.getElementById('prompt-extra').style.display = 'none';
+  document.getElementById('layer-source-tag').textContent = '';
+
+  hideAlert();
+}
+
+// ══════════════════════════════════
+// UI HELPERS
+// ══════════════════════════════════
+function setAnalyzeLoading(on) {
+  const btn = document.getElementById('btn-analyze');
+  const bar = document.getElementById('loading-bar');
+  const icon = document.getElementById('analyze-icon');
+  const text = document.getElementById('analyze-text');
+  if (on) {
+    btn.disabled = true;
+    btn.classList.add('loading');
+    bar.classList.add('active');
+    icon.textContent = '⟳';
+    text.textContent = 'AI가 이미지를 분석하는 중...';
+  } else {
+    btn.disabled = false;
+    btn.classList.remove('loading');
+    bar.classList.remove('active');
+    icon.textContent = '✦';
+    text.textContent = '다시 분석하기';
+  }
+}
+
+function showAlert(type, msg) {
+  const el = document.getElementById('alert-box');
+  el.textContent = msg;
+  el.className = 'alert show ' + type;
+  if (type === 'success' || type === 'info') setTimeout(hideAlert, 4500);
+}
+
+function hideAlert() {
+  const el = document.getElementById('alert-box');
+  el.className = 'alert';
+}
+
+function toggleGuide(id) {
+  const box = document.getElementById(id);
+  const arr = document.getElementById('arr-' + id);
+  box.classList.toggle('open');
+  arr.classList.toggle('open');
+}
+
+function clearKeys() {
+  if (!confirm('저장된 API 키를 모두 삭제할까요?')) return;
+  ['claude','gpt','gemini'].forEach(api => {
+    localStorage.removeItem('apikey_' + api);
+    document.getElementById('key-' + api).value = '';
+    updateKeyStatus(api, false);
+  });
+  localStorage.removeItem('selectedApi');
+  S.currentApi = 'gemini';
+  selectApi('gemini', true);
+  updateApiStatus();
+  showAlert('success', 'API 키가 모두 삭제되었습니다.');
+}
+
+function clearAll() {
+  if (!confirm('API 키와 저장된 라이브러리를 모두 삭제할까요?\n이 작업은 되돌릴 수 없습니다.')) return;
+  localStorage.clear();
+  ['claude','gpt','gemini'].forEach(api => {
+    document.getElementById('key-' + api).value = '';
+    updateKeyStatus(api, false);
+  });
+  S.currentApi = 'gemini';
+  selectApi('gemini', true);
+  updateApiStatus();
+  renderSavedList();
+  showAlert('success', '모든 데이터가 삭제되었습니다.');
+}
+
+// ══════════════════════════════════
+// START
+// ══════════════════════════════════
+init();
+</script>
+</body>
+</html>
